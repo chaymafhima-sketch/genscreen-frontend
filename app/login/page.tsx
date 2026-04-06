@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, ArrowRight, MonitorPlay, AlertCircle, CheckCircle2, Shield } from "lucide-react";
+import { Mail, Lock, ArrowRight, MonitorPlay, AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,7 +10,6 @@ export default function LoginPage() {
   const [form, setForm] = useState({
     email: "",
     password: "",
-    role: "chef",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -34,9 +33,16 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok && data.access_token) {
-        setSuccess("Connexion réussie ! Redirection vers votre tableau de bord...");
+        setSuccess("Connexion réussie ! Redirection...");
         localStorage.setItem("token", data.access_token);
-        localStorage.setItem("user", JSON.stringify(data.user));
+        
+        // On s'assure que l'email est bien présent dans l'objet utilisateur
+        const userToStore = {
+          ...data.user,
+          email: data.user?.email || form.email,
+          name: data.user?.name || data.user?.fullname || data.user?.fullName || form.email.split('@')[0]
+        };
+        localStorage.setItem("user", JSON.stringify(userToStore));
 
         setTimeout(() => {
           if (data.user.role === "admin") {
@@ -44,21 +50,19 @@ export default function LoginPage() {
           } else {
             router.push("/dashboard/chef");
           }
-        }, 1500);
+        }, 1200);
       } else {
         if (data.message === "User not found") {
           setError("Aucun compte n'est associé à cette adresse email.");
         } else if (data.message === "Wrong password" || data.message === "Invalid password") {
-          setError("Le mot de passe que vous avez saisi est incorrect.");
-        } else if (data.message === "Role mismatch") {
-          setError("Le rôle sélectionné ne correspond pas à ce compte.");
+          setError("Le mot de passe saisi est incorrect.");
         } else {
           setError(data.message || "Email ou mot de passe incorrect.");
         }
       }
     } catch (err) {
       console.error("Erreur:", err);
-      setError("Impossible de contacter le serveur. Veuillez réessayer plus tard.");
+      setError("Impossible de contacter le serveur.");
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +92,6 @@ export default function LoginPage() {
       {/* Right Pane - Form */}
       <div className="flex w-full flex-col justify-center px-8 sm:px-12 lg:w-1/2 lg:px-24 xl:px-32 relative bg-slate-950">
         
-        {/* Subtle background glow effect for right pane */}
         <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[120%] bg-blue-600/10 blur-[100px] pointer-events-none rounded-full" />
         
         <div className="w-full max-w-md mx-auto z-10">
@@ -104,7 +107,7 @@ export default function LoginPage() {
               Bon retour !
             </h2>
             <p className="text-sm text-slate-400">
-              Connectez-vous pour accéder à votre tableau de bord.
+              Connectez-vous pour accéder à votre espace sécurisé.
             </p>
           </div>
 
@@ -153,26 +156,6 @@ export default function LoginPage() {
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                 />
               </div>
-
-              {/* Role Select Input */}
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-500 group-focus-within:text-blue-500 transition-colors">
-                  <Shield size={20} />
-                </div>
-                <select
-                  className="block w-full rounded-xl border border-slate-700/50 bg-slate-900/50 p-4 pl-12 text-sm text-slate-100 shadow-sm transition-all focus:border-blue-500 focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 appearance-none"
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                >
-                  <option value="chef" className="bg-slate-900 text-slate-100">Chef d'agence</option>
-                  <option value="admin" className="bg-slate-900 text-slate-100">Administrateur</option>
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-500">
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                    <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd" />
-                  </svg>
-                </div>
-              </div>
             </div>
 
             <button
@@ -180,7 +163,7 @@ export default function LoginPage() {
               disabled={isLoading}
               className="group flex w-full items-center justify-center gap-3 rounded-xl bg-blue-600 px-4 py-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-500 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none"
             >
-              {isLoading ? "Connexion en cours..." : "Se connecter"}
+              {isLoading ? "Vérification..." : "Se connecter"}
               {!isLoading && <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />}
             </button>
           </form>
@@ -191,7 +174,7 @@ export default function LoginPage() {
               href="/register"
               className="font-semibold text-blue-400 transition-colors hover:text-blue-300 hover:underline underline-offset-4"
             >
-              Créez-en un ici
+              Inscrivez-vous ici
             </a>
           </p>
         </div>
