@@ -17,15 +17,38 @@ import {
 import Link from "next/link";
 
 export default function ChefDashboard() {
-  const [userData, setUserData] = useState<{name?: string, fullname?: string, role?: string}>({});
+  const [userData, setUserData] = useState<{name?: string, fullname?: string, role?: string, canDiffuse?: boolean}>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const user = localStorage.getItem("user");
-    if (user) {
-      setUserData(JSON.parse(user));
-    }
-    setLoading(false);
+    const fetchUser = async () => {
+      const storedUser = localStorage.getItem("user");
+      const token = localStorage.getItem("token");
+      
+      if (storedUser && token) {
+        try {
+          // Update from local storage first for speed
+          const initialUser = JSON.parse(storedUser);
+          setUserData(initialUser);
+
+          // Fetch the latest profile from API to ensure permissions are up to date
+          const res = await fetch("http://localhost:3001/users/profile", {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const latestUser = await res.json();
+            setUserData(latestUser);
+            // Optionally update localStorage with the latest data
+            localStorage.setItem("user", JSON.stringify(latestUser));
+          }
+        } catch (e) {
+          console.error("Erreur profile fetch", e);
+        }
+      }
+      setLoading(false);
+    };
+
+    fetchUser();
   }, []);
 
   return (
@@ -39,12 +62,22 @@ export default function ChefDashboard() {
           </h1>
           <p className="text-slate-400 mt-2 text-lg">Gérez vos écrans et diffusez vos messages en direct sur vos agences.</p>
         </div>
-        <Link 
-          href="/dashboard/chef/content"
-          className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl text-md font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95 flex items-center gap-2"
-        >
-          <Send size={20} /> Diffuser un contenu
-        </Link>
+        {userData.canDiffuse ? (
+          <Link 
+            href="/dashboard/chef/content"
+            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl text-md font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95 flex items-center gap-2"
+          >
+            <Send size={20} /> Diffuser un contenu
+          </Link>
+        ) : (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl px-6 py-3 flex items-center gap-3 text-amber-400">
+            <AlertCircle size={20} />
+            <div className="text-sm">
+              <p className="font-bold">Accès Restreint</p>
+              <p className="opacity-80">Vous n'avez pas l'autorisation de diffuser.</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Premium Stats Grid */}

@@ -168,14 +168,8 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-8 text-center text-sm text-slate-400">
-            Pas encore de compte ?{" "}
-            <a
-              href="/register"
-              className="font-semibold text-blue-400 transition-colors hover:text-blue-300 hover:underline underline-offset-4"
-            >
-              Inscrivez-vous ici
-            </a>
+          <p className="mt-8 text-center text-sm text-slate-500 italic">
+            Plateforme réservée au personnel autorisé.
           </p>
         </div>
       </div>

@@ -2,12 +2,13 @@
 
 import Sidebar, { SidebarLinkType } from "../components/Sidebar";
 import Header from "../components/Header";
-import { LayoutDashboard, Building2, MonitorSmartphone, FileVideo, Activity } from "lucide-react";
+import { LayoutDashboard, Building2, MonitorSmartphone, FileVideo, Activity, UserCheck } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const adminLinks: SidebarLinkType[] = [
     { href: "/dashboard/admin", label: "Vue d'ensemble", icon: <LayoutDashboard size={20} /> },
     { href: "/dashboard/admin/agencies", label: "Agences", icon: <Building2 size={20} /> },
+    { href: "/dashboard/admin/users", label: "Chefs d'Agence", icon: <UserCheck size={20} /> },
     { href: "/dashboard/admin/screens", label: "Écrans", icon: <MonitorSmartphone size={20} /> },
     { href: "/dashboard/admin/content", label: "Contenus", icon: <FileVideo size={20} /> },
     { href: "/dashboard/admin/logs", label: "Logs & Erreurs", icon: <Activity size={20} /> },
