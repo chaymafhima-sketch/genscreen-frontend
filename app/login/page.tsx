@@ -44,6 +44,22 @@ export default function LoginPage() {
         };
         localStorage.setItem("user", JSON.stringify(userToStore));
 
+        // Enregistrer la connexion dans l'historique
+        fetch("http://localhost:3001/logs", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${data.access_token}`
+          },
+          body: JSON.stringify({
+            type: "info",
+            action: "Connexion utilisateur",
+            source: "Auth",
+            user: userToStore.name || userToStore.email,
+            details: `L'utilisateur s'est connecté avec succès au tableau de bord ${userToStore.role}.`
+          })
+        }).catch(err => console.error("Failed to log login", err));
+
         setTimeout(() => {
           if (data.user.role === "admin") {
             router.push("/dashboard/admin");

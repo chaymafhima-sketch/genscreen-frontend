@@ -9,36 +9,42 @@ import {
   Clock, 
   ChevronRight, 
   CheckCircle2, 
-  AlertCircle,
   Activity,
   FileVideo,
-  LayoutDashboard
+  LayoutDashboard,
+  Building,
+  Loader2,
+  AlertCircle,
+  Globe
 } from "lucide-react";
 import Link from "next/link";
 
 export default function ChefDashboard() {
-  const [userData, setUserData] = useState<{name?: string, fullname?: string, role?: string, canDiffuse?: boolean}>({});
+  const [userData, setUserData] = useState<{name?: string, fullname?: string, role?: string, canDiffuse?: boolean, address?: string, city?: string}>({});
   const [loading, setLoading] = useState(true);
+  const [agencies, setAgencies] = useState<any[]>([]);
+  const [loadingAgencies, setLoadingAgencies] = useState(true);
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchData = async () => {
       const storedUser = localStorage.getItem("user");
       const token = localStorage.getItem("token");
       
+      let currentUser = userData;
+
       if (storedUser && token) {
         try {
-          // Update from local storage first for speed
           const initialUser = JSON.parse(storedUser);
           setUserData(initialUser);
+          currentUser = initialUser;
 
-          // Fetch the latest profile from API to ensure permissions are up to date
           const res = await fetch("http://localhost:3001/users/profile", {
             headers: { "Authorization": `Bearer ${token}` }
           });
           if (res.ok) {
             const latestUser = await res.json();
             setUserData(latestUser);
-            // Optionally update localStorage with the latest data
+            currentUser = latestUser;
             localStorage.setItem("user", JSON.stringify(latestUser));
           }
         } catch (e) {
@@ -46,9 +52,34 @@ export default function ChefDashboard() {
         }
       }
       setLoading(false);
+
+      // Fetch Agencies
+      if (token) {
+        try {
+          const res = await fetch("http://localhost:3001/agencies", {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const allAgencies = await res.json();
+            // Inclusive Filtering: City Match OR Address Match (for migration safety)
+            const filtered = allAgencies.filter((a: any) => {
+              const uCity = (currentUser.city || "").toLowerCase().trim();
+              const aCity = (a.city || "").toLowerCase().trim();
+              const aAddr = (a.address || "").toLowerCase().trim();
+              
+              return uCity && (aCity === uCity || aAddr === uCity || aAddr.includes(uCity));
+            });
+            setAgencies(filtered);
+          }
+        } catch (e) {
+          console.error("Erreur fetch agencies", e);
+        } finally {
+          setLoadingAgencies(false);
+        }
+      }
     };
 
-    fetchUser();
+    fetchData();
   }, []);
 
   return (
@@ -56,95 +87,69 @@ export default function ChefDashboard() {
       {/* Header & Welcome */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-4xl font-bold text-white tracking-tight flex items-center gap-3">
-             <LayoutDashboard size={32} className="text-blue-500" />
+          <h1 className="text-4xl font-bold text-foreground tracking-tight flex items-center gap-3">
+             <LayoutDashboard size={32} className="text-primary" />
              Salut, {userData.fullname || userData.name || "Manager"} !
           </h1>
-          <p className="text-slate-400 mt-2 text-lg">Gérez vos écrans et diffusez vos messages en direct sur vos agences.</p>
-        </div>
-        {userData.canDiffuse ? (
-          <Link 
-            href="/dashboard/chef/content"
-            className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl text-md font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95 flex items-center gap-2"
-          >
-            <Send size={20} /> Diffuser un contenu
-          </Link>
-        ) : (
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl px-6 py-3 flex items-center gap-3 text-amber-400">
-            <AlertCircle size={20} />
-            <div className="text-sm">
-              <p className="font-bold">Accès Restreint</p>
-              <p className="opacity-80">Vous n'avez pas l'autorisation de diffuser.</p>
-            </div>
+          <div className="flex items-center gap-2 mt-2">
+            <p className="text-muted-foreground text-lg">Gérez vos écrans et diffusez vos messages en direct sur vos agences.</p>
+            {userData.city && (
+              <span className="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 animate-pulse">
+                <Globe size={12} /> Zone : {userData.city}
+              </span>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Premium Stats Grid */}
       <Stats />
 
       {/* Local Content & Screens Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-8">
         {/* Managed Screens Activity */}
-        <div className="bg-[#0f172a]/60 backdrop-blur-2xl border border-slate-800/60 rounded-3xl p-8 shadow-2xl">
+        <div className="soft-card p-8 shadow-sm">
           <div className="flex justify-between items-center mb-8">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <MonitorSmartphone size={22} className="text-indigo-400" />
-              État de mes écrans
+            <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <MonitorSmartphone size={22} className="text-indigo-500" />
+              Mes Agences ({agencies.length})
             </h3>
-            <Link href="/dashboard/chef/screens" className="text-xs font-bold text-blue-500 hover:text-blue-400 uppercase tracking-widest flex items-center gap-1 group">
-              Voir tout <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            <Link href="/dashboard/chef/screens" className="text-xs font-bold text-primary hover:opacity-80 uppercase tracking-widest flex items-center gap-1 group">
+              Écrans <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
           
           <div className="space-y-4">
-             {[
-               { name: "Écran Accueil - Agence A", status: "Online", time: "Actif maintenant" },
-               { name: "Vitrine - Agence B", status: "Online", time: "Dernier ping: 10s" },
-               { name: "Totem - Agence A", status: "Offline", time: "Perte de connexion" },
-             ].map((screen, i) => (
-               <div key={i} className="bg-slate-900/40 border border-slate-800/40 p-4 rounded-2xl flex items-center justify-between transition-all hover:border-slate-700/60 group">
-                  <div className="flex items-center gap-4">
-                     <div className={`h-3 w-3 rounded-full ${screen.status === 'Online' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
-                     <div>
-                        <p className="text-sm font-bold text-slate-200">{screen.name}</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">{screen.time}</p>
-                     </div>
-                  </div>
-                  <Activity size={16} className="text-slate-700 group-hover:text-blue-400 transition-colors" />
+             {loadingAgencies ? (
+               <div className="flex flex-col items-center py-10 text-muted-foreground animate-pulse">
+                 <Loader2 className="animate-spin mb-2" size={24} />
+                 <p className="text-xs">Recherche de vos agences...</p>
                </div>
-             ))}
-          </div>
-        </div>
-
-        {/* Recent Broadcasts */}
-        <div className="bg-[#0f172a]/60 backdrop-blur-2xl border border-slate-800/60 rounded-3xl p-8 shadow-2xl">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <Clock size={22} className="text-amber-400" />
-              Historique local
-            </h3>
-            <Link href="/dashboard/chef/content" className="text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors">
-              Historique complet
-            </Link>
-          </div>
-          
-          <div className="relative pl-6 border-l border-slate-800/60 space-y-8">
-             <div className="relative">
-                <div className="absolute -left-[31px] top-0 h-4 w-4 rounded-full bg-blue-500 border-4 border-slate-950 shadow-lg" />
-                <p className="text-xs font-bold text-white">"Promotion Pizza -50%" diffusée</p>
-                <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1"> <Clock size={10} /> Il y a 15 minutes</p>
-             </div>
-             <div className="relative">
-                <div className="absolute -left-[31px] top-0 h-4 w-4 rounded-full bg-slate-800 border-4 border-slate-950" />
-                <p className="text-xs font-bold text-slate-400">Message : "Bon appétit !" envoyé</p>
-                <p className="text-[10px] text-slate-600 mt-1 flex items-center gap-1"> <Clock size={10} /> Il y a 2 heures</p>
-             </div>
-             <div className="relative">
-                <div className="absolute -left-[31px] top-0 h-4 w-4 rounded-full bg-slate-800 border-4 border-slate-950" />
-                <p className="text-xs font-bold text-slate-400">Vidéo "Pub Coca" mise à jour</p>
-                <p className="text-[10px] text-slate-600 mt-1 flex items-center gap-1"> <Clock size={10} /> Hier à 18:30</p>
-             </div>
+             ) : agencies.length > 0 ? (
+               agencies.map((agency, i) => (
+                 <div key={agency._id || i} className="bg-muted/30 border border-border/40 p-4 rounded-2xl flex items-center justify-between transition-all hover:border-primary/30 group">
+                    <div className="flex items-center gap-4">
+                       <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                          <Building size={20} />
+                       </div>
+                       <div>
+                          <p className="text-sm font-bold text-foreground">{agency.name}</p>
+                          <p className="text-[10px] text-primary font-bold uppercase tracking-tight">{agency.city || "Ville non renseignée"}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{agency.address}</p>
+                       </div>
+                    </div>
+                    <Activity size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                 </div>
+               ))
+             ) : (
+               <div className="flex flex-col items-center py-10 text-center px-6">
+                 <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                   <AlertCircle size={24} className="text-muted-foreground" />
+                 </div>
+                 <p className="text-sm font-bold text-foreground">Aucune agence assignée</p>
+                 <p className="text-xs text-muted-foreground mt-1">Vos agences s'afficheront ici en fonction de votre ville : <span className="font-bold text-primary">{userData.city || "Non définie"}</span></p>
+               </div>
+             )}
           </div>
         </div>
       </div>

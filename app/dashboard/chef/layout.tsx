@@ -36,7 +36,7 @@ export default function ChefLayout({ children }: { children: React.ReactNode }) 
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-blue-500/30">
+    <div className="flex min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 transition-colors duration-300">
       <Sidebar links={chefLinks} role="Chef d'Agence" />
       <div className="flex-1 ml-72 relative flex flex-col min-h-screen">
         <Header />

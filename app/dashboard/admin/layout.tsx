@@ -11,11 +11,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/dashboard/admin/users", label: "Chefs d'Agence", icon: <UserCheck size={20} /> },
     { href: "/dashboard/admin/screens", label: "Écrans", icon: <MonitorSmartphone size={20} /> },
     { href: "/dashboard/admin/content", label: "Contenus", icon: <FileVideo size={20} /> },
-    { href: "/dashboard/admin/logs", label: "Logs & Erreurs", icon: <Activity size={20} /> },
+    { href: "/dashboard/admin/logs", label: "Historique", icon: <Activity size={20} /> },
   ];
 
   return (
-    <div className="flex min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-blue-500/30">
+    <div className="flex min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 transition-colors duration-300">
       <Sidebar links={adminLinks} role="Administrateur" />
       <div className="flex-1 ml-72 relative flex flex-col min-h-screen">
         <Header />

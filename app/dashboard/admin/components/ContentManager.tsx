@@ -66,15 +66,15 @@ export default function ContentManager() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-48 bg-slate-900/40 backdrop-blur-sm border border-slate-800/50 rounded-2xl">
-        <Loader2 className="animate-spin text-blue-500" size={32} />
+      <div className="flex justify-center items-center h-48 bg-card border border-border rounded-2xl transition-colors">
+        <Loader2 className="animate-spin text-primary" size={32} />
       </div>
     );
   }
 
   if (error) {
     return (
-       <div className="flex justify-center items-center h-48 bg-slate-900/40 backdrop-blur-sm border border-slate-800/50 rounded-2xl text-red-400 gap-2">
+       <div className="flex justify-center items-center h-48 bg-card border border-border rounded-2xl text-destructive gap-2 transition-colors">
          <AlertCircle size={24} />
          <span>{error}</span>
        </div>
@@ -82,44 +82,38 @@ export default function ContentManager() {
   }
 
   return (
-    <div className="bg-slate-900/40 backdrop-blur-sm border border-slate-800/50 rounded-2xl overflow-hidden shadow-xl">
+    <div className="soft-card overflow-hidden shadow-sm transition-colors p-0">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-slate-400">
-          <thead className="bg-slate-950/50 text-xs uppercase font-medium text-slate-300 border-b border-slate-800/50">
+        <table className="w-full text-left text-sm text-muted-foreground">
+          <thead className="bg-muted/50 text-xs uppercase font-medium text-muted-foreground border-b border-border transition-colors">
             <tr>
               <th scope="col" className="px-6 py-4">Nom du Contenu</th>
               <th scope="col" className="px-6 py-4">Type</th>
               <th scope="col" className="px-6 py-4">Statut</th>
               <th scope="col" className="px-6 py-4">Créé le</th>
-              <th scope="col" className="px-6 py-4 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/50">
+          <tbody className="divide-y divide-border/40 transition-colors">
             {contents.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
+                <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
                   Aucun contenu trouvé.
                 </td>
               </tr>
             ) : (
               contents.slice(0, 5).map((item: any) => (
-                <tr key={item.id} className="hover:bg-slate-800/20 transition-colors">
-                  <td className="px-6 py-4 font-medium text-slate-200">
+                <tr key={item.id} className="hover:bg-muted/30 transition-colors group">
+                  <td className="px-6 py-4 font-medium text-foreground">
                     {item.title || "Contenu Sans Nom"}
                   </td>
-                  <td className="px-6 py-4 text-slate-400">
+                  <td className="px-6 py-4 text-muted-foreground">
                     {item.type || "Inconnu"}
                   </td>
                   <td className="px-6 py-4">
                     {getStatusBadge(item.status)}
                   </td>
-                  <td className="px-6 py-4 text-slate-500">
+                  <td className="px-6 py-4 text-muted-foreground/60">
                     {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Récemment"}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="p-2 text-slate-500 hover:text-blue-400 transition-colors rounded-lg hover:bg-blue-500/10">
-                      <MoreHorizontal size={18} />
-                    </button>
                   </td>
                 </tr>
               ))
@@ -129,8 +123,8 @@ export default function ContentManager() {
       </div>
       
       {contents.length > 5 && (
-        <div className="p-4 border-t border-slate-800/50 bg-slate-950/20 flex justify-center">
-          <Link href="/dashboard/admin/content" className="text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors">
+        <div className="p-4 border-t border-border bg-muted/20 flex justify-center transition-colors">
+          <Link href="/dashboard/admin/content" className="text-sm text-primary hover:opacity-80 font-medium transition-colors">
             Voir tous les contenus ({contents.length}) →
           </Link>
         </div>

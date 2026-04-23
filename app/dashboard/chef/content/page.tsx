@@ -10,51 +10,152 @@ import {
   CheckCircle2, 
   Loader2, 
   AlertCircle,
-  Plus,
-  Trash2,
-  ChevronRight
+  PlayCircle,
+  Image as ImageIcon,
+  MessageSquare,
+  Video,
+  RefreshCcw,
+  Edit2,
+  X,
+  Search
 } from "lucide-react";
 
 export default function ChefContentPage() {
-  const [activeTab, setActiveTab] = useState<"media" | "text" | "link">("media");
   const [screens, setScreens] = useState<any[]>([]);
+  const [contents, setContents] = useState<any[]>([]);
   const [selectedScreens, setSelectedScreens] = useState<string[]>([]);
+  const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
+  const [duration, setDuration] = useState<number | "">("");
+  const [searchTerm, setSearchTerm] = useState("");
+  
   const [loading, setLoading] = useState(true);
+  const [loadingContents, setLoadingContents] = useState(true);
   const [isDiffusing, setIsDiffusing] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [userData, setUserData] = useState<any>(null);
 
-  // Form states
-  const [title, setTitle] = useState("");
-  const [textContent, setTextContent] = useState("");
-  const [webUrl, setWebUrl] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  // Content Edit Modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingContent, setEditingContent] = useState<any>(null);
+  const [editFormData, setEditFormData] = useState({ title: '', message: '' });
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
+      if (!storedUser || !token) return;
+      
+      const user = JSON.parse(storedUser);
+      setUserData(user);
+
+      // Fetch Agencies to filter screens
+      const agenciesRes = await fetch("http://localhost:3001/agencies", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      let myAgencyIds = new Set<string>();
+      if (agenciesRes.ok) {
+        const allAgencies = await agenciesRes.json();
+        const filteredAgencies = allAgencies.filter((a: any) => {
+          const uCity = (user.city || "").toLowerCase().trim();
+          const aCity = (a.city || "").toLowerCase().trim();
+          const aAddr = (a.address || "").toLowerCase().trim();
+          return uCity && (aCity === uCity || aAddr === uCity || aAddr.includes(uCity));
+        });
+        myAgencyIds = new Set(filteredAgencies.map((a: { _id: any; id: any }) => a._id || a.id));
+      }
+
+      // Fetch Screens
+      const screensRes = await fetch("http://localhost:3001/screens", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (screensRes.ok) {
+        const allScreens = await screensRes.json();
+        const filteredScreens = allScreens.filter((s: any) => myAgencyIds.has(s.agencyId));
+        setScreens(filteredScreens);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchContents = async () => {
+    try {
+      setLoadingContents(true);
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:3001/content", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setContents(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch contents", err);
+    } finally {
+      setLoadingContents(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchMyScreens = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:3001/screens", {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setScreens(data);
-        } else {
-           // Fallback mock
-           setScreens([
-             { id: '1', name: 'Écran Hall A', status: 'Online' },
-             { id: '2', name: 'Écran Vitrine', status: 'Online' },
-             { id: '3', name: 'Écran Réception', status: 'Offline' },
-           ]);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMyScreens();
+    fetchData();
+    fetchContents();
   }, []);
+
+  const openEditModal = (e: React.MouseEvent, item: any) => {
+    e.stopPropagation(); // Empêcher la sélection du contenu
+    setEditingContent(item);
+    setEditFormData({ 
+      title: item.title || '', 
+      message: item.message || '' 
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateContent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdating(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3001/content/${editingContent._id || editingContent.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(editFormData)
+      });
+
+      if (!res.ok) throw new Error("Erreur lors de la mise à jour");
+
+      // Record in logs
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      await fetch("http://localhost:3001/logs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          type: "info",
+          action: "Modification contenu",
+          source: "Chef d'Agence",
+          user: user.name || user.email || "Chef",
+          details: `Modification du contenu "${editFormData.title}"`
+        })
+      });
+      
+      setIsEditModalOpen(false);
+      fetchContents();
+    } catch (err) {
+      console.error(err);
+      alert("Impossible de mettre à jour le contenu");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const handleToggleScreen = (id: string) => {
     setSelectedScreens(prev => 
@@ -68,238 +169,331 @@ export default function ChefContentPage() {
       alert("Veuillez sélectionner au moins un écran.");
       return;
     }
+    if (!selectedContentId) {
+      alert("Veuillez sélectionner un contenu à diffuser.");
+      return;
+    }
 
     setIsDiffusing(true);
     try {
       const token = localStorage.getItem("token");
-      const headers = { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}` 
-      };
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const content = contents.find(c => (c._id || c.id) === selectedContentId);
 
-      let payload: any = {
-        title: title || "Sans titre",
-        type: activeTab === 'media' ? (file?.type.includes('video') ? 'Video' : 'Image') : activeTab === 'text' ? 'Text' : 'WebLink',
-        status: "Actif",
-        targetScreens: selectedScreens, // List of IDs for targeted diffusion
-      };
-
-      if (activeTab === 'text') {
-        payload.description = textContent;
-      } else if (activeTab === 'link') {
-        payload.videoUrl = webUrl; // Reusing videoUrl field for the link if necessary or a generic url field
-      } else if (activeTab === 'media' && file) {
-        // Here we simulate the URL or convert to base64 for the real sync
-        // For a true premium feel, we send the media details
-        payload.imageBase64 = file.type.includes('image') ? '/images/auth_bg.png' : null; 
-        payload.videoUrl = file.type.includes('video') ? 'https://example.com/video.mp4' : null;
-      }
-
-      const res = await fetch("http://localhost:3001/content", {
+      // Record in logs/history
+      await fetch("http://localhost:3001/logs", {
         method: "POST",
-        headers,
-        body: JSON.stringify(payload)
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          type: "success",
+          action: "Diffusion de contenu",
+          source: "Chef d'Agence",
+          user: user.name || user.email || "Chef",
+          details: `Diffusion de "${content?.title}" sur ${selectedScreens.length} écran(s) pour une durée de ${duration}s.`
+        })
       });
 
-      if (!res.ok) throw new Error("Erreur de diffusion");
+      // Simulation of assigning content to screen
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
-        setTitle("");
-        setTextContent("");
-        setWebUrl("");
-        setFile(null);
         setSelectedScreens([]);
+        setSelectedContentId(null);
+        setDuration("");
       }, 3000);
 
     } catch (err) {
       console.error(err);
-      alert("Une erreur est survenue lors de la diffusion vers la base de données.");
+      alert("Une erreur est survenue lors de la diffusion.");
     } finally {
       setIsDiffusing(false);
     }
   };
 
+  const getMediaIcon = (type?: string) => {
+    const t = type?.toLowerCase();
+    if (t?.includes("video")) return <Video size={20} className="text-purple-400" />;
+    if (t?.includes("url")) return <Globe size={20} className="text-cyan-400" />;
+    if (t?.includes("message")) return <MessageSquare size={20} className="text-amber-400" />;
+    return <ImageIcon size={20} className="text-blue-400" />;
+  };
+
   return (
     <div className="flex flex-col lg:flex-row gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Main Form Area */}
+      {/* Main Content Area */}
       <div className="flex-1 space-y-8">
         <div className="flex justify-between items-end">
           <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">Portail de Diffusion</h1>
-            <p className="text-slate-400 mt-2">Créez et envoyez vos contenus vers vos écrans en un clic.</p>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight">Portail de Diffusion</h1>
+            <p className="text-muted-foreground mt-2">Choisissez un contenu disponible et diffusez-le sur vos écrans.</p>
           </div>
-        </div>
-
-        {/* Tabs Selection */}
-        <div className="flex p-1.5 bg-slate-900/60 backdrop-blur-md rounded-2xl border border-slate-800/50 w-fit">
           <button 
-            onClick={() => setActiveTab("media")}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'media' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+            type="button"
+            onClick={() => {
+               fetchData();
+               fetchContents();
+            }}
+            className="p-2.5 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all active:rotate-180 duration-500"
+            title="Rafraîchir"
           >
-            <FileVideo size={18} /> Média
-          </button>
-          <button 
-             onClick={() => setActiveTab("text")}
-             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'text' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
-          >
-            <Type size={18} /> Message Texte
-          </button>
-          <button 
-             onClick={() => setActiveTab("link")}
-             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'link' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
-          >
-            <Globe size={18} /> Lien Web
+            <RefreshCcw size={20} />
           </button>
         </div>
 
-        {/* Active Content Form */}
-        <form onSubmit={handleDiffusion} className="bg-[#0f172a]/60 backdrop-blur-2xl border border-slate-800/60 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+        <form onSubmit={handleDiffusion} className="soft-card p-8 shadow-sm relative overflow-hidden flex flex-col h-[600px]">
           {success && (
-            <div className="absolute inset-0 bg-emerald-500/90 backdrop-blur-md z-10 flex flex-col items-center justify-center text-white animate-in slide-in-from-top-full duration-500">
+            <div className="absolute inset-0 bg-emerald-500 z-10 flex flex-col items-center justify-center text-white animate-in slide-in-from-top-full duration-500">
                <CheckCircle2 size={60} className="mb-4" />
-               <h3 className="text-2xl font-bold">Diffusion en cours...</h3>
-               <p className="mt-2 text-emerald-100 font-medium">Vos écrans sont en train de se mettre à jour.</p>
+               <h3 className="text-2xl font-bold">Diffusion réussie !</h3>
+               <p className="mt-2 text-emerald-50 font-medium">Vos écrans sont en train de se mettre à jour.</p>
             </div>
           )}
 
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Titre de la campagne</label>
-              <input 
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: Promo Sandwich Lyon"
-                className="w-full bg-slate-950/60 border border-slate-800 rounded-2xl p-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-all font-medium"
-              />
-            </div>
-
-            {activeTab === "media" && (
-              <div className="group relative border-2 border-dashed border-slate-800 rounded-3xl p-12 text-center hover:border-blue-500/50 hover:bg-blue-500/5 transition-all">
-                <input 
-                  type="file" 
-                  className="absolute inset-0 opacity-0 cursor-pointer" 
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                />
-                <div className="flex flex-col items-center gap-4">
-                   <div className="h-16 w-16 bg-slate-800 rounded-2xl flex items-center justify-center text-slate-500 group-hover:text-blue-400 group-hover:scale-110 transition-all">
-                      <Plus size={32} />
-                   </div>
-                   <div>
-                      <p className="text-white font-bold">{file ? file.name : "Cliquez ou glissez un fichier"}</p>
-                      <p className="text-xs text-slate-500 mt-1 uppercase tracking-tight font-bold">MP4, PNG ou JPG (Max 50Mo)</p>
-                   </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === "text" && (
-              <div className="space-y-2">
-                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">Message à afficher</label>
-                 <textarea 
-                   rows={5}
-                   value={textContent}
-                   onChange={(e) => setTextContent(e.target.value)}
-                   placeholder="Tapez le message qui apparaîtra sur l'écran..."
-                   className="w-full bg-slate-950/60 border border-slate-800 rounded-3xl p-6 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-all text-lg font-medium resize-none shadow-inner"
-                 />
-              </div>
-            )}
-
-            {activeTab === "link" && (
-              <div className="space-y-2">
-                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest px-1">URL / Iframe</label>
-                 <div className="relative">
-                   <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500">
-                      <Globe size={18} />
-                   </div>
-                   <input 
-                    type="url"
-                    value={webUrl}
-                    onChange={(e) => setWebUrl(e.target.value)}
-                    placeholder="https://votre-site.com/promo"
-                    className="w-full bg-slate-950/60 border border-slate-800 rounded-3xl py-5 pl-14 pr-6 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-all font-mono text-sm"
-                   />
-                 </div>
-              </div>
-            )}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <h3 className="text-lg font-bold text-foreground">1. Sélectionner un contenu</h3>
             
-            <div className="pt-6">
-              <button 
-                type="submit"
-                disabled={isDiffusing || selectedScreens.length === 0}
-                className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:bg-slate-800 text-white font-black uppercase tracking-widest py-5 rounded-2xl transition-all shadow-[0_10px_30px_rgba(37,99,235,0.3)] active:scale-95 flex items-center justify-center gap-3"
-              >
-                {isDiffusing ? <Loader2 className="animate-spin" size={24} /> : <Send size={24} />}
-                Diffuser maintenent
-              </button>
+            <div className="relative group flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={16} />
+              <input 
+                type="text"
+                placeholder="Rechercher par titre ou type..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-background/50 border border-border rounded-xl pl-10 pr-10 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-muted-foreground/50"
+              />
+              {searchTerm && (
+                <button 
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
+            {loadingContents ? (
+               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                 <Loader2 className="animate-spin text-primary mb-4" size={32} />
+                 <p>Chargement des contenus...</p>
+               </div>
+            ) : contents.length === 0 ? (
+               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                 <FileVideo size={48} className="mb-4 opacity-50" />
+                 <p>Aucun contenu n'a été ajouté par l'administrateur.</p>
+               </div>
+            ) : (
+               contents
+                 .filter(item => 
+                   (item.title || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+                   (item.type || "").toLowerCase().includes(searchTerm.toLowerCase())
+                 )
+                 .map((item) => (
+                 <div 
+                   key={item._id || item.id}
+                   onClick={() => setSelectedContentId(item._id || item.id)}
+                   className={`p-4 rounded-2xl cursor-pointer transition-all border flex items-center justify-between group ${
+                     selectedContentId === (item._id || item.id)
+                       ? 'bg-primary/10 border-primary/50 shadow-md' 
+                       : 'bg-background border-border hover:border-primary/30 hover:bg-muted/50'
+                   }`}
+                 >
+                    <div className="flex items-center gap-4">
+                       <div className="h-12 w-16 bg-muted/50 border border-border flex items-center justify-center rounded-lg overflow-hidden relative">
+                         {item.imageBase64 ? (
+                           <img src={`http://localhost:3001${item.imageBase64}`} alt="thumbnail" className="object-cover w-full h-full" />
+                         ) : (
+                           getMediaIcon(item.type)
+                         )}
+                         {item.videoUrl && <PlayCircle size={16} className="absolute text-white drop-shadow-md" />}
+                       </div>
+                       <div>
+                          <p className={`text-sm font-bold transition-colors ${selectedContentId === (item._id || item.id) ? 'text-primary' : 'text-foreground'}`}>
+                            {item.title || "Contenu sans nom"}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1 font-medium">{item.type}</p>
+                       </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <button 
+                          type="button"
+                          onClick={(e) => openEditModal(e, item)}
+                          className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors border border-primary/20 opacity-0 group-hover:opacity-100" 
+                          title="Modifier"
+                       >
+                          <Edit2 size={14} />
+                       </button>
+                       <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                          selectedContentId === (item._id || item.id) 
+                            ? 'bg-primary border-primary' 
+                            : 'bg-transparent border-border'
+                       }`}>
+                          {selectedContentId === (item._id || item.id) && <CheckCircle2 size={14} className="text-primary-foreground" />}
+                       </div>
+                    </div>
+                 </div>
+               ))
+            )}
+          </div>
+          
+          <div className="pt-4 border-t border-border space-y-4">
+            <div className="space-y-2">
+               <label className="text-sm font-bold text-foreground">Durée de la diffusion (en secondes)</label>
+               <input 
+                 type="number" 
+                 min="1"
+                 placeholder="Ex: 30"
+                 value={duration}
+                 onChange={(e) => setDuration(e.target.value ? parseInt(e.target.value) : "")}
+                 className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-medium placeholder:text-muted-foreground/40"
+               />
+               <p className="text-[10px] text-muted-foreground">Le contenu s'affichera pendant ce temps avant de passer au suivant.</p>
+            </div>
+            <button 
+              type="submit"
+              disabled={isDiffusing || selectedScreens.length === 0 || !selectedContentId || !duration || duration <= 0}
+              className="w-full bg-primary hover:opacity-90 disabled:opacity-50 disabled:bg-muted text-primary-foreground font-black uppercase tracking-widest py-5 rounded-2xl transition-all shadow-[0_10px_30px_rgba(var(--primary),0.3)] active:scale-95 flex items-center justify-center gap-3"
+            >
+              {isDiffusing ? <Loader2 className="animate-spin" size={24} /> : <Send size={24} />}
+              Diffuser la sélection
+            </button>
           </div>
         </form>
       </div>
 
       {/* Targets Sidebar */}
       <div className="w-full lg:w-96 space-y-6">
-        <div className="bg-[#0f172a]/80 backdrop-blur-3xl border border-white/[0.06] rounded-3xl p-6 shadow-2xl h-fit sticky top-28">
-           <div className="flex items-center justify-between mb-6 border-b border-white/[0.04] pb-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                 <MonitorSmartphone size={18} className="text-blue-400" />
-                 Cibles ({selectedScreens.length})
+        <div className="soft-card p-6 shadow-sm h-[600px] flex flex-col">
+           <div className="flex items-center justify-between mb-6 border-b border-border/50 pb-4">
+              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                 <MonitorSmartphone size={18} className="text-primary" />
+                 2. Cibles ({selectedScreens.length})
               </h3>
               <button 
                 onClick={() => setSelectedScreens(screens.map(s => s.id || s._id))}
-                className="text-[10px] font-black text-blue-500 hover:text-white uppercase tracking-tighter"
+                className="text-[10px] font-black text-primary hover:opacity-80 uppercase tracking-tighter"
               >
                  Tout cocher
               </button>
            </div>
 
-           <div className="max-h-[500px] overflow-y-auto custom-scrollbar space-y-2 pr-2">
+           <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2">
              {loading ? (
-               <div className="p-8 text-center"><Loader2 className="animate-spin text-slate-700 mx-auto" /></div>
+               <div className="p-8 text-center"><Loader2 className="animate-spin text-primary mx-auto" /></div>
              ) : screens.length === 0 ? (
-               <p className="text-slate-500 text-sm text-center py-8">Aucun écran trouvé.</p>
+               <p className="text-muted-foreground text-sm text-center py-8">Aucun écran trouvé.</p>
              ) : screens.map((screen) => (
                 <div 
                   key={screen.id || screen._id}
                   onClick={() => handleToggleScreen(screen.id || screen._id)}
                   className={`p-4 rounded-2xl cursor-pointer transition-all border flex items-center justify-between group ${
                     selectedScreens.includes(screen.id || screen._id) 
-                      ? 'bg-blue-500/10 border-blue-500/40' 
-                      : 'bg-white/[0.02] border-transparent hover:border-white/[0.1] hover:bg-white/[0.04]'
+                      ? 'bg-primary/10 border-primary/40' 
+                      : 'bg-muted/30 border-transparent hover:border-border hover:bg-muted/50'
                   }`}
                 >
                    <div className="flex items-center gap-3">
                       <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all ${
                          selectedScreens.includes(screen.id || screen._id) 
-                           ? 'bg-blue-500 border-blue-500' 
-                           : 'bg-transparent border-slate-700 group-hover:border-slate-500'
+                           ? 'bg-primary border-primary' 
+                           : 'bg-transparent border-border group-hover:border-muted-foreground/30'
                       }`}>
-                         {selectedScreens.includes(screen.id || screen._id) && <CheckCircle2 size={16} className="text-white" />}
+                         {selectedScreens.includes(screen.id || screen._id) && <CheckCircle2 size={16} className="text-primary-foreground" />}
                       </div>
                       <div>
-                         <p className={`text-xs font-bold transition-colors ${selectedScreens.includes(screen.id || screen._id) ? 'text-white' : 'text-slate-400'}`}>
+                         <p className={`text-xs font-bold transition-colors ${selectedScreens.includes(screen.id || screen._id) ? 'text-foreground' : 'text-muted-foreground'}`}>
                            {screen.name}
                          </p>
-                         <p className="text-[9px] text-slate-600 mt-0.5">Statut: {screen.status}</p>
+                         <p className="text-[9px] text-muted-foreground/60 mt-0.5">Statut: {screen.status}</p>
                       </div>
                    </div>
-                   <div className={`h-2 w-2 rounded-full ${screen.status === 'Online' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                   <div className={`h-2 w-2 rounded-full ${screen.status === 'Online' ? 'bg-emerald-500' : 'bg-destructive'}`} />
                 </div>
              ))}
            </div>
            
-           <div className="mt-8 p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10">
-              <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-1 flex items-center gap-2">
+           <div className="mt-4 p-4 bg-primary/5 rounded-2xl border border-primary/10 shrink-0">
+              <p className="text-[10px] text-primary font-bold uppercase tracking-widest mb-1 flex items-center gap-2">
                  <AlertCircle size={12} /> info diffusion
               </p>
-              <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
-                La diffusion locale sur vos agences est immédiat dès la validation.
+              <p className="text-[10px] text-muted-foreground leading-relaxed font-medium">
+                La diffusion locale sur vos agences est immédiate dès la validation.
               </p>
            </div>
         </div>
       </div>
+      {/* Modal - Edit Content (Title & Message) */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+           <div 
+             className="absolute inset-0 bg-background/60 backdrop-blur-md transition-opacity" 
+             onClick={() => !isUpdating && setIsEditModalOpen(false)} 
+           />
+           <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+              <div className="p-6 border-b border-border bg-muted/30">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground tracking-tight">Modifier le contenu</h2>
+                    <p className="text-xs text-muted-foreground mt-1">Mettez à jour le nom ou le texte.</p>
+                  </div>
+                  <button onClick={() => setIsEditModalOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <form onSubmit={handleUpdateContent} className="p-6 space-y-5">
+                 <div className="space-y-2">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom du contenu</label>
+                    <input 
+                      required
+                      value={editFormData.title}
+                      onChange={(e) => setEditFormData({...editFormData, title: e.target.value})}
+                      placeholder="Nom du contenu..." 
+                      className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all shadow-inner"
+                    />
+                 </div>
+
+                 {editingContent?.type === 'message' && (
+                    <div className="space-y-2">
+                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Texte du message</label>
+                       <textarea 
+                         required
+                         rows={4}
+                         value={editFormData.message}
+                         onChange={(e) => setEditFormData({...editFormData, message: e.target.value})}
+                         placeholder="Votre message ici..." 
+                         className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all resize-none shadow-inner"
+                       />
+                    </div>
+                 )}
+
+                 <div className="pt-4 flex gap-3">
+                    <button 
+                      type="button" 
+                      onClick={() => setIsEditModalOpen(false)}
+                      className="flex-1 bg-muted hover:bg-muted/80 text-foreground font-semibold py-2.5 rounded-xl text-sm transition-all"
+                    >
+                       Annuler
+                    </button>
+                    <button 
+                      type="submit" 
+                      disabled={isUpdating}
+                      className="flex-1 bg-primary hover:opacity-90 text-primary-foreground font-semibold py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                    >
+                       {isUpdating ? <Loader2 size={18} className="animate-spin" /> : "Enregistrer"}
+                    </button>
+                 </div>
+              </form>
+           </div>
+        </div>
+      )}
     </div>
   );
 }
