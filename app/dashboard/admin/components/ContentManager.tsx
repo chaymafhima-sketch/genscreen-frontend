@@ -102,7 +102,7 @@ export default function ContentManager() {
               </tr>
             ) : (
               contents.slice(0, 5).map((item: any) => (
-                <tr key={item.id} className="hover:bg-muted/30 transition-colors group">
+                <tr key={item._id} className="hover:bg-muted/30 transition-colors group">
                   <td className="px-6 py-4 font-medium text-foreground">
                     {item.title || "Contenu Sans Nom"}
                   </td>
