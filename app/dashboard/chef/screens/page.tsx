@@ -19,7 +19,8 @@ import {
   Edit2,
   Trash2,
   X,
-  FileVideo
+  FileVideo,
+  Plus
 } from "lucide-react";
 
 export default function ChefScreensPage() {
