@@ -53,25 +53,20 @@ export default function ContentPage() {
 
   const fetchContentAssignments = async () => {
     try {
-      if (!screens.length || !contents.length) {
+      if (!contents.length) {
         setContentAssignedScreensMap({});
         return;
       }
 
       const map: Record<string, any[]> = {};
       await Promise.all(
-        screens.map(async (screen: any) => {
-          const screenId = screen._id || screen.id;
-          if (!screenId) return;
-          const res = await fetch(`/api/backend/screens/${screenId}/content`, { cache: "no-store" });
-          if (!res.ok) return;
-          const resolvedContent = await res.json();
-          (resolvedContent || []).forEach((content: any) => {
-            const contentId = content?._id || content?.id;
-            if (!contentId) return;
-            if (!map[contentId]) map[contentId] = [];
-            map[contentId].push(screen);
-          });
+        contents.map(async (content: any) => {
+          const contentId = content._id || content.id;
+          if (!contentId) return;
+          const res = await fetch(`/api/backend/screens/content/${contentId}/assigned`, { cache: "no-store" });
+          if (res.ok) {
+            map[contentId] = await res.json();
+          }
         })
       );
       setContentAssignedScreensMap(map);

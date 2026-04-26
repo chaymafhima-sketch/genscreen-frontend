@@ -20,7 +20,8 @@ import {
   Building2,
   Edit2,
   Trash2,
-  FileVideo
+  FileVideo,
+  ChevronRight
 } from "lucide-react";
 
 export default function ScreensPage() {
@@ -28,19 +29,20 @@ export default function ScreensPage() {
   const [loading, setLoading] = useState(true);
   const [agencies, setAgencies] = useState<any[]>([]);
   const [contents, setContents] = useState<any[]>([]);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isAssigningContent, setIsAssigningContent] = useState(false);
+  const [currentPlaylist, setCurrentPlaylist] = useState<any[]>([]);
+  const [screenForContent, setScreenForContent] = useState<any>(null);
+  const [selectedContentIds, setSelectedContentIds] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   
   // Form state
-  const [formData, setFormData] = useState({ name: '', macAddress: '', agencyId: '', location: '' });
+  const [formData, setFormData] = useState({ name: '', agencyId: '', location: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [isContentModalOpen, setIsContentModalOpen] = useState(false);
-  const [screenForContent, setScreenForContent] = useState<any>(null);
-  const [selectedContentIds, setSelectedContentIds] = useState<string[]>([]);
-  const [isAssigningContent, setIsAssigningContent] = useState(false);
-
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchScreens = async () => {
@@ -117,13 +119,18 @@ export default function ScreensPage() {
 
   const openEditModal = (screen: any) => {
     setEditingId(screen._id || screen.id);
-    setFormData({ name: screen.name || '', macAddress: screen.macAddress || '', agencyId: screen.agencyId || '', location: screen.location || '' });
+    const agencyId = screen.agencyId || (screen.agency?._id || screen.agency?.id) || '';
+    setFormData({ 
+      name: screen.name || '', 
+      agencyId: String(agencyId), 
+      location: screen.location || '' 
+    });
     setIsModalOpen(true);
   };
 
   const openAddModal = () => {
     setEditingId(null);
-    setFormData({ name: '', macAddress: '', agencyId: '', location: '' });
+    setFormData({ name: '', agencyId: '', location: '' });
     setIsModalOpen(true);
   };
 
@@ -138,6 +145,47 @@ export default function ScreensPage() {
     setSelectedContentIds((prev) =>
       prev.includes(contentId) ? prev.filter((id) => id !== contentId) : [...prev, contentId]
     );
+  };
+
+  const openDetailsModal = async (screen: any) => {
+    setScreenForContent(screen);
+    setIsDetailsModalOpen(true);
+    try {
+      const res = await fetch(`/api/backend/screens/${screen._id || screen.id}/content`, { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentPlaylist(data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleUpdatePlaylist = async () => {
+    if (!screenForContent) return;
+    const screenId = screenForContent._id || screenForContent.id;
+    
+    const playlist = currentPlaylist.map(item => ({
+      contentId: item._id || item.id,
+      duration: parseInt(item.duration) || 10
+    }));
+
+    setIsAssigningContent(true);
+    try {
+      const res = await fetch(`/api/backend/screens/${screenId}/playlist`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playlist }),
+      });
+      if (!res.ok) throw new Error("Erreur lors de la mise à jour de la playlist");
+      alert("Playlist mise à jour !");
+      setIsDetailsModalOpen(false);
+      fetchScreens(true);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsAssigningContent(false);
+    }
   };
 
   const applyContentAction = async (mode: "replace" | "add" | "remove") => {
@@ -202,7 +250,7 @@ export default function ScreensPage() {
       setTimeout(() => {
         setIsModalOpen(false);
         setSubmitSuccess(false);
-        setFormData({ name: '', macAddress: '', agencyId: '', location: '' });
+        setFormData({ name: '', agencyId: '', location: '' });
         setEditingId(null);
       }, 1500);
     } catch (err) {
@@ -312,12 +360,12 @@ export default function ScreensPage() {
           {filteredScreens.map((screen) => (
             <div 
               key={screen.id || screen._id}
-              className="relative soft-card overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-1"
+              className="relative soft-card overflow-hidden shadow-sm transition-all duration-300 hover:-translate-y-1 group"
             >
               {/* Card Header (Preview) */}
               <div className="relative h-44 bg-muted/40 overflow-hidden">
                 {screen.thumbnail ? (
-                  <img src={screen.thumbnail} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-700" alt="Screen preview" />
+                  <img src={`http://localhost:3001${screen.thumbnail}`} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-700" alt="Screen preview" />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/30 group-hover:scale-110 transition-transform duration-700">
                      <Layers size={60} />
@@ -332,9 +380,6 @@ export default function ScreensPage() {
                 </div>
 
                 <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                   <button onClick={() => openContentModal(screen)} className="p-1.5 bg-emerald-500/80 backdrop-blur-md rounded-lg border border-emerald-500/30 text-white hover:bg-emerald-500 transition-colors" title="Gérer contenus">
-                      <FileVideo size={16} />
-                   </button>
                    <button onClick={() => openEditModal(screen)} className="p-1.5 bg-primary/80 backdrop-blur-md rounded-lg border border-primary/30 text-white hover:bg-primary transition-colors" title="Modifier">
                       <Edit2 size={16} />
                    </button>
@@ -361,14 +406,35 @@ export default function ScreensPage() {
 
                  <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border/50">
                     <div>
-                       <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">Adresse IP</p>
-                       <p className="text-xs text-foreground font-mono mt-0.5">{screen.ip || "0.0.0.0"}</p>
+                       <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">Code de Jumelage</p>
+                       <p className={`text-xs font-mono mt-0.5 ${!screen.isPaired ? 'text-primary font-bold' : 'text-muted-foreground opacity-50'}`}>
+                         {screen.pairingCode || "---"}
+                         {!screen.isPaired && <span className="ml-2 text-[8px] bg-primary/20 px-1 rounded">À JUMELER</span>}
+                       </p>
                     </div>
                     <div className="text-right">
                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Dernière activité</p>
                        <p className="text-xs text-muted-foreground mt-0.5">{screen.lastSeen || "Inconnu"}</p>
                     </div>
                  </div>
+
+                 <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/10">
+                    <div>
+                       <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">Adresse IP</p>
+                       <p className="text-xs text-foreground font-mono mt-0.5">{screen.ip || "0.0.0.0"}</p>
+                    </div>
+                    <div className="text-right">
+                       <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">S/N</p>
+                       <p className="text-xs text-foreground font-mono mt-0.5 truncate">{screen.serialNumber || "Non lié"}</p>
+                    </div>
+                 </div>
+
+                 <button 
+                    onClick={() => openDetailsModal(screen)}
+                    className="w-full mt-2 py-3 bg-primary/5 hover:bg-primary/10 text-primary rounded-xl text-xs font-bold transition-all border border-primary/10 flex items-center justify-center gap-2"
+                 >
+                    Détails & Playlist <ChevronRight size={14} />
+                 </button>
               </div>
             </div>
           ))}
@@ -405,28 +471,18 @@ export default function ScreensPage() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom de l'écran</label>
-                        <input 
-                          required
-                          value={formData.name}
-                          onChange={(e) => setFormData({...formData, name: e.target.value})}
-                          placeholder="Ex: Écran Hall A" 
-                          className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Adresse MAC</label>
-                        <input 
-                          required
-                          value={formData.macAddress}
-                          onChange={(e) => setFormData({...formData, macAddress: e.target.value})}
-                          placeholder="00:00:00:00:00:00" 
-                          className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
-                        />
-                      </div>
-                   </div>
+                    <div className="grid grid-cols-1 gap-6">
+                       <div className="space-y-2">
+                         <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom de l'écran</label>
+                         <input 
+                           required
+                           value={formData.name}
+                           onChange={(e) => setFormData({...formData, name: e.target.value})}
+                           placeholder="Ex: Écran Hall A" 
+                           className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
+                         />
+                       </div>
+                    </div>
 
                    <div className="space-y-2">
                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Affecter à une agence</label>
@@ -543,6 +599,177 @@ export default function ScreensPage() {
               >
                 {isAssigningContent ? <Loader2 size={14} className="animate-spin" /> : null}
                 Remplacer la liste
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isDetailsModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-md" onClick={() => !isAssigningContent && setIsDetailsModalOpen(false)} />
+          <div className="relative w-full max-w-3xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-border bg-muted/30 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                  screenForContent?.status === 'Online' || screenForContent?.status === 'online' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-destructive/10 text-destructive'
+                }`}>
+                  <MonitorSmartphone size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">{screenForContent?.name}</h3>
+                  <p className="text-xs text-muted-foreground">Configuration de la diffusion (ADMIN)</p>
+                </div>
+              </div>
+              <button onClick={() => !isAssigningContent && setIsDetailsModalOpen(false)} className="text-muted-foreground hover:text-foreground">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+              {/* Technical Info */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Statut</p>
+                  <p className="text-sm font-bold mt-1 flex items-center gap-1.5">
+                    <span className={`h-2 w-2 rounded-full ${screenForContent?.status === 'Online' || screenForContent?.status === 'online' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                    {screenForContent?.status}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Adresse IP</p>
+                  <p className="text-sm font-mono mt-1">{screenForContent?.ip || "---"}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">S/N</p>
+                  <p className="text-sm font-mono mt-1 truncate">{screenForContent?.serialNumber || "---"}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Contenus</p>
+                  <p className="text-sm font-bold mt-1">{currentPlaylist.length} Médias</p>
+                </div>
+              </div>
+
+              {/* Playlist Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Layers size={14} /> Playlist & Séquençage
+                  </h4>
+                  {currentPlaylist.length === 1 && (
+                    <span className="text-[10px] font-bold bg-primary/10 text-primary px-2 py-1 rounded-md border border-primary/20">
+                      DIFFUSION PERMANENTE
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  {currentPlaylist.length === 0 ? (
+                    <div className="py-12 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-2xl text-muted-foreground">
+                      <FileVideo size={40} className="opacity-20 mb-3" />
+                      <p className="text-sm">Aucun contenu assigné à cet écran.</p>
+                    </div>
+                  ) : (
+                    currentPlaylist.map((item, idx) => (
+                      <div key={item._id || item.id} className="flex items-center gap-4 p-4 bg-card border border-border rounded-2xl hover:border-primary/30 transition-colors">
+                        <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden border border-border">
+                          {item.imageBase64 ? (
+                            <img src={`http://localhost:3001${item.imageBase64}`} className="w-full h-full object-cover" alt="" />
+                          ) : item.type === 'video' ? (
+                            <Activity size={20} className="text-primary" />
+                          ) : (
+                            <Globe size={20} className="text-primary" />
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-foreground truncate">{item.title}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.type}</p>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-col items-end">
+                            <label className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Durée (sec)</label>
+                            <div className="flex items-center gap-2">
+                              <input 
+                                type="number" 
+                                min="1"
+                                value={item.duration || 10}
+                                onChange={(e) => {
+                                  const newVal = parseInt(e.target.value);
+                                  const nextP = [...currentPlaylist];
+                                  nextP[idx].duration = newVal;
+                                  setCurrentPlaylist(nextP);
+                                }}
+                                disabled={currentPlaylist.length <= 1}
+                                className="w-20 bg-muted border border-border rounded-lg px-3 py-1.5 text-sm font-bold text-center focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                              />
+                              <span className="text-xs font-bold text-muted-foreground">s</span>
+                            </div>
+                          </div>
+                          
+                          <button 
+                            onClick={() => {
+                              const nextP = currentPlaylist.filter((_, i) => i !== idx);
+                              setCurrentPlaylist(nextP);
+                            }}
+                            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
+                            title="Retirer de la playlist"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Add Content Section */}
+              <div className="space-y-4 pt-8 border-t border-border">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <Plus size={14} /> Ajouter du contenu à la playlist
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {contents.filter(c => !currentPlaylist.some(p => (p._id || p.id) === (c._id || c.id))).map((content) => (
+                    <button
+                      key={content._id || content.id}
+                      onClick={() => {
+                        const newItem = { ...content, duration: 30 };
+                        setCurrentPlaylist([...currentPlaylist, newItem]);
+                      }}
+                      className="group relative aspect-square rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all"
+                    >
+                      {content.imageBase64 ? (
+                        <img src={`http://localhost:3001${content.imageBase64}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                      ) : (
+                        <div className="w-full h-full bg-muted flex flex-col items-center justify-center p-2 text-center">
+                          <Activity size={24} className="text-primary mb-1" />
+                          <p className="text-[9px] font-bold truncate w-full">{content.title}</p>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <Plus className="text-white drop-shadow-lg" size={32} />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-border bg-muted/30 flex justify-end gap-3">
+              <button 
+                onClick={() => setIsDetailsModalOpen(false)}
+                className="px-6 py-2.5 rounded-xl text-sm font-bold text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+              >
+                Fermer
+              </button>
+              <button 
+                onClick={handleUpdatePlaylist}
+                disabled={isAssigningContent || currentPlaylist.length === 0}
+                className="px-8 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {isAssigningContent ? <Loader2 size={16} className="animate-spin" /> : null}
+                Enregistrer Playlist
               </button>
             </div>
           </div>

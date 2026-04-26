@@ -52,18 +52,26 @@ async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }
   // Copy request body for non-GET/HEAD
   const method = req.method.toUpperCase();
   const hasBody = !["GET", "HEAD"].includes(method);
-  const body = hasBody ? await req.text() : undefined;
+  const body = hasBody ? await req.arrayBuffer() : undefined;
 
-  const makeRequest = (tokenValue: string) =>
-    fetch(upstreamUrl, {
+  const makeRequest = (tokenValue: string) => {
+    const headers: Record<string, string> = {
+      "Authorization": `Bearer ${tokenValue}`,
+    };
+    
+    // We must NOT manually set Content-Type for multipart/form-data as it needs the boundary
+    const originalContentType = req.headers.get("content-type");
+    if (hasBody && originalContentType) {
+      headers["Content-Type"] = originalContentType;
+    }
+
+    return fetch(upstreamUrl, {
       method,
-      headers: {
-        "Authorization": `Bearer ${tokenValue}`,
-        ...(hasBody ? { "Content-Type": req.headers.get("content-type") || "application/json" } : {}),
-      },
+      headers,
       body,
       cache: "no-store",
     });
+  };
 
   let res = await makeRequest(accessToken);
 
@@ -77,12 +85,12 @@ async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }
   }
 
   const contentType = res.headers.get("content-type") || "";
-  const raw = await res.text();
+  const raw = await res.arrayBuffer();
 
   return new NextResponse(raw, {
     status: res.status,
     headers: {
-      "content-type": contentType.includes("application/json") ? "application/json" : contentType || "text/plain",
+      "content-type": contentType,
     },
   });
 }
