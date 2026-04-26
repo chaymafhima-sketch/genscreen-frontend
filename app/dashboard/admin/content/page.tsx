@@ -14,15 +14,17 @@ export default function ContentPage() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [screens, setScreens] = useState<any[]>([]);
+  const [contentAssignedScreensMap, setContentAssignedScreensMap] = useState<Record<string, any[]>>({});
+  const [selectedScreenIds, setSelectedScreenIds] = useState<string[]>([]);
+  const [assigningContentId, setAssigningContentId] = useState<string | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchContents = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/content", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const res = await fetch("/api/backend/content", { cache: "no-store" });
       if (!res.ok) throw new Error("Erreur de récupération des contenus");
       const data = await res.json();
       setContents(data);
@@ -35,14 +37,101 @@ export default function ContentPage() {
 
   useEffect(() => { fetchContents(); }, []);
 
+  const fetchScreens = async () => {
+    try {
+      const res = await fetch("/api/backend/screens", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setScreens(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => { fetchScreens(); }, []);
+
+  const fetchContentAssignments = async () => {
+    try {
+      if (!screens.length || !contents.length) {
+        setContentAssignedScreensMap({});
+        return;
+      }
+
+      const map: Record<string, any[]> = {};
+      await Promise.all(
+        screens.map(async (screen: any) => {
+          const screenId = screen._id || screen.id;
+          if (!screenId) return;
+          const res = await fetch(`/api/backend/screens/${screenId}/content`, { cache: "no-store" });
+          if (!res.ok) return;
+          const resolvedContent = await res.json();
+          (resolvedContent || []).forEach((content: any) => {
+            const contentId = content?._id || content?.id;
+            if (!contentId) return;
+            if (!map[contentId]) map[contentId] = [];
+            map[contentId].push(screen);
+          });
+        })
+      );
+      setContentAssignedScreensMap(map);
+    } catch (err) {
+      console.error(err);
+      setContentAssignedScreensMap({});
+    }
+  };
+
+  useEffect(() => {
+    fetchContentAssignments();
+  }, [screens, contents]);
+
+  const handleSaveAssignedTvs = async () => {
+    if (!assigningContentId) return;
+
+    const currentlyAssigned = (contentAssignedScreensMap[assigningContentId] || [])
+      .map((s: any) => s._id || s.id)
+      .filter(Boolean);
+    const toAdd = selectedScreenIds.filter((id) => !currentlyAssigned.includes(id));
+    const toRemove = currentlyAssigned.filter((id: string) => !selectedScreenIds.includes(id));
+
+    setIsAssigning(true);
+    try {
+      await Promise.all([
+        ...toAdd.map((screenId) =>
+          fetch(`/api/backend/screens/${screenId}/content/add`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contentIds: [assigningContentId] }),
+          }).then((res) => {
+            if (!res.ok) throw new Error(`Échec d'assignation sur l'écran ${screenId}`);
+          })
+        ),
+        ...toRemove.map((screenId) =>
+          fetch(`/api/backend/screens/${screenId}/content/remove`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contentIds: [assigningContentId] }),
+          }).then((res) => {
+            if (!res.ok) throw new Error(`Échec de retrait sur l'écran ${screenId}`);
+          })
+        ),
+      ]);
+
+      await fetchContentAssignments();
+      alert("TVs assignées mises à jour.");
+      setAssigningContentId(null);
+      setSelectedScreenIds([]);
+    } catch (err: any) {
+      alert(err?.message || "Erreur lors de l'assignation.");
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce contenu ?")) return;
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/content/${id}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const res = await fetch(`/api/backend/content/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
       fetchContents();
     } catch (err: any) {
@@ -60,17 +149,15 @@ export default function ContentPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
       let res;
       const contentType = formData.type.toLowerCase();
 
       if (editingId) {
         // Pour la modification, on envoie du JSON pour mettre à jour les textes/noms
         // Si un fichier est sélectionné, on pourrait gérer l'upload, mais ici on se concentre sur les textes
-        res = await fetch(`http://localhost:3001/content/${editingId}`, {
+        res = await fetch(`/api/backend/content/${editingId}`, {
           method: "PUT",
           headers: { 
-            "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
@@ -81,15 +168,15 @@ export default function ContentPage() {
           })
         });
       } else if (contentType === 'url') {
-        res = await fetch("http://localhost:3001/content/create", {
+        res = await fetch("/api/backend/content/create", {
           method: "POST",
-          headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: formData.title, type: 'url', url: formData.url || '' })
         });
       } else if (contentType === 'message') {
-        res = await fetch("http://localhost:3001/content/create", {
+        res = await fetch("/api/backend/content/create", {
           method: "POST",
-          headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: formData.title, type: 'message', message: formData.message || '' })
         });
       } else {
@@ -98,9 +185,8 @@ export default function ContentPage() {
         data.append('file', selectedFile);
         data.append('title', formData.title);
         data.append('type', formData.type);
-        res = await fetch("http://localhost:3001/content/upload", {
+        res = await fetch("/api/backend/content/upload", {
           method: "POST",
-          headers: { "Authorization": `Bearer ${token}` },
           body: data
         });
       }
@@ -178,6 +264,14 @@ export default function ContentPage() {
     setIsModalOpen(true);
   };
 
+  const openAssignTvsModal = (contentId: string) => {
+    const preselected = (contentAssignedScreensMap[contentId] || [])
+      .map((s: any) => s._id || s.id)
+      .filter(Boolean);
+    setAssigningContentId(contentId);
+    setSelectedScreenIds(preselected);
+  };
+
   const isFileType = formData.type.toLowerCase() === 'image' || formData.type.toLowerCase() === 'video';
 
   return (
@@ -242,13 +336,17 @@ export default function ContentPage() {
                   <th scope="col" className="px-6 py-4">Média</th>
                   <th scope="col" className="px-6 py-4">Statut</th>
                   <th scope="col" className="px-6 py-4">Détails</th>
+                  <th scope="col" className="px-6 py-4">TVs assignées</th>
                   <th scope="col" className="px-6 py-4">Créé le</th>
                   <th scope="col" className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border transition-colors">
-                {filteredContents.map((item: any) => (
-                  <tr key={item._id || item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors group">
+                {filteredContents.map((item: any) => {
+                  const contentId = item._id || item.id;
+                  const assignedScreens = contentAssignedScreensMap[contentId] || [];
+                  return (
+                  <tr key={contentId} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors group">
                     <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-200 flex items-center gap-4">
                        <div className="h-12 w-16 bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center rounded-lg shadow-inner overflow-hidden relative transition-colors">
                          {item.imageBase64 ? (
@@ -275,10 +373,31 @@ export default function ContentPage() {
                         <span className="text-xs">{item.videoUrl}</span>
                       ) : "—"}
                     </td>
+                    <td className="px-6 py-4">
+                      {assignedScreens.length === 0 ? (
+                        <span className="text-xs text-muted-foreground">Aucune TV</span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {assignedScreens.slice(0, 2).map((screen: any) => (
+                            <span key={screen._id || screen.id} className="px-2 py-1 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
+                              {screen.name || "TV"}
+                            </span>
+                          ))}
+                          {assignedScreens.length > 2 ? (
+                            <span className="px-2 py-1 rounded-full text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
+                              +{assignedScreens.length - 2}
+                            </span>
+                          ) : null}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-slate-500">
                       {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Récemment"}
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
+                     <button onClick={() => openAssignTvsModal(contentId)} className="p-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-lg transition-colors border border-emerald-500/20" title="Modifier TVs assignées">
+                        <PlayCircle size={16} />
+                     </button>
                      <button onClick={() => openEditModal(item)} className="p-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors border border-blue-500/20" title="Modifier">
                         <Edit2 size={16} />
                      </button>
@@ -287,7 +406,7 @@ export default function ContentPage() {
                      </button>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           )}
@@ -407,6 +526,60 @@ export default function ContentPage() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {assigningContentId && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-md" onClick={() => !isAssigning && setAssigningContentId(null)} />
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800/50 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Modifier les TVs assignées</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Ajout et retrait automatiques selon votre sélection.</p>
+              </div>
+              <button onClick={() => !isAssigning && setAssigningContentId(null)} className="text-slate-500 hover:text-slate-300 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 max-h-[360px] overflow-y-auto space-y-2">
+              {screens.length === 0 ? (
+                <p className="text-sm text-slate-500 dark:text-slate-400">Aucun écran disponible.</p>
+              ) : (
+                screens.map((screen: any) => {
+                  const id = screen._id || screen.id;
+                  const checked = selectedScreenIds.includes(id);
+                  return (
+                    <label key={id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/20 cursor-pointer transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() =>
+                          setSelectedScreenIds((prev) =>
+                            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+                          )
+                        }
+                        className="h-4 w-4"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-200">{screen.name || "Écran"}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{screen.agency?.name || "Sans agence"}</p>
+                      </div>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+            <div className="p-6 border-t border-slate-200 dark:border-slate-800/50 flex justify-end gap-3">
+              <button type="button" onClick={() => setAssigningContentId(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                Annuler
+              </button>
+              <button type="button" disabled={isAssigning} onClick={handleSaveAssignedTvs} className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2">
+                {isAssigning ? <Loader2 size={16} className="animate-spin" /> : null}
+                Enregistrer
+              </button>
+            </div>
           </div>
         </div>
       )}

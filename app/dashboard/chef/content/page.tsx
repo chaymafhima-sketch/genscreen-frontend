@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { 
   Send, 
   FileVideo, 
-  Type, 
   Globe, 
   MonitorSmartphone, 
   CheckCircle2, 
@@ -17,13 +16,17 @@ import {
   RefreshCcw,
   Edit2,
   X,
-  Search
+  Search,
+  Plus,
+  Trash2
 } from "lucide-react";
 
 export default function ChefContentPage() {
   const [screens, setScreens] = useState<any[]>([]);
+  const [myAgencies, setMyAgencies] = useState<any[]>([]);
   const [contents, setContents] = useState<any[]>([]);
   const [selectedScreens, setSelectedScreens] = useState<string[]>([]);
+  const [selectedAgencyIds, setSelectedAgencyIds] = useState<string[]>([]);
   const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
   const [duration, setDuration] = useState<number | "">("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,36 +42,30 @@ export default function ChefContentPage() {
   const [editingContent, setEditingContent] = useState<any>(null);
   const [editFormData, setEditFormData] = useState({ title: '', message: '' });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createFormData, setCreateFormData] = useState<any>({ title: "", type: "message", url: "", message: "" });
+  const [createFile, setCreateFile] = useState<File | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("user");
-      if (!storedUser || !token) return;
-      
-      const user = JSON.parse(storedUser);
+      const profileRes = await fetch("/api/backend/users/profile", { cache: "no-store" });
+      const user = profileRes.ok ? await profileRes.json() : null;
+      if (!user) return;
       setUserData(user);
 
       // Fetch Agencies to filter screens
-      const agenciesRes = await fetch("http://localhost:3001/agencies", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const agenciesRes = await fetch("/api/backend/agencies", { cache: "no-store" });
       let myAgencyIds = new Set<string>();
       if (agenciesRes.ok) {
-        const allAgencies = await agenciesRes.json();
-        const filteredAgencies = allAgencies.filter((a: any) => {
-          const uCity = (user.city || "").toLowerCase().trim();
-          const aCity = (a.city || "").toLowerCase().trim();
-          const aAddr = (a.address || "").toLowerCase().trim();
-          return uCity && (aCity === uCity || aAddr === uCity || aAddr.includes(uCity));
-        });
+        // Backend should already return only agencies assigned to current chef
+        const filteredAgencies = await agenciesRes.json();
+        setMyAgencies(filteredAgencies);
         myAgencyIds = new Set(filteredAgencies.map((a: { _id: any; id: any }) => a._id || a.id));
       }
 
       // Fetch Screens
-      const screensRes = await fetch("http://localhost:3001/screens", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const screensRes = await fetch("/api/backend/screens", { cache: "no-store" });
       if (screensRes.ok) {
         const allScreens = await screensRes.json();
         const filteredScreens = allScreens.filter((s: any) => myAgencyIds.has(s.agencyId));
@@ -84,13 +81,21 @@ export default function ChefContentPage() {
   const fetchContents = async () => {
     try {
       setLoadingContents(true);
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/content", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const res = await fetch("/api/backend/content", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
-        setContents(data);
+        const userId = String(userData?._id || userData?.id || "");
+        const owned = (data || []).filter((c: any) => {
+          const creatorId = String(
+            c?.createdByUserId ||
+            c?.createdById ||
+            c?.createdBy?._id ||
+            c?.createdBy?.id ||
+            ""
+          );
+          return Boolean(userId) && creatorId === userId;
+        });
+        setContents(owned);
       }
     } catch (err) {
       console.error("Failed to fetch contents", err);
@@ -100,9 +105,15 @@ export default function ChefContentPage() {
   };
 
   useEffect(() => {
-    fetchData();
-    fetchContents();
+    const init = async () => {
+      await fetchData();
+    };
+    init();
   }, []);
+
+  useEffect(() => {
+    if (userData) fetchContents();
+  }, [userData]);
 
   const openEditModal = (e: React.MouseEvent, item: any) => {
     e.stopPropagation(); // Empêcher la sélection du contenu
@@ -118,12 +129,10 @@ export default function ChefContentPage() {
     e.preventDefault();
     setIsUpdating(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/content/${editingContent._id || editingContent.id}`, {
+      const res = await fetch(`/api/backend/content/${editingContent._id || editingContent.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(editFormData)
       });
@@ -131,12 +140,11 @@ export default function ChefContentPage() {
       if (!res.ok) throw new Error("Erreur lors de la mise à jour");
 
       // Record in logs
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      await fetch("http://localhost:3001/logs", {
+      const user = userData || {};
+      await fetch("/api/backend/logs", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
           type: "info",
@@ -163,9 +171,13 @@ export default function ChefContentPage() {
     );
   };
 
+  const handleToggleAgency = (id: string) => {
+    setSelectedAgencyIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
   const handleDiffusion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedScreens.length === 0) {
+    if (selectedScreens.length === 0 && selectedAgencyIds.length === 0) {
       alert("Veuillez sélectionner au moins un écran.");
       return;
     }
@@ -176,33 +188,49 @@ export default function ChefContentPage() {
 
     setIsDiffusing(true);
     try {
-      const token = localStorage.getItem("token");
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const user = userData || {};
       const content = contents.find(c => (c._id || c.id) === selectedContentId);
+      const agencyScreenIds = screens
+        .filter((s: any) => selectedAgencyIds.includes(s.agencyId))
+        .map((s: any) => s._id || s.id)
+        .filter(Boolean);
+      const targetScreenIds = Array.from(new Set([...selectedScreens, ...agencyScreenIds]));
+
+      // Real assignment: add selected content to each selected screen
+      await Promise.all(
+        targetScreenIds.map((screenId) =>
+          fetch(`/api/backend/screens/${screenId}/content/add`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ contentIds: [selectedContentId] }),
+          }).then((res) => {
+            if (!res.ok) throw new Error(`Assignation échouée sur écran ${screenId}`);
+          })
+        )
+      );
 
       // Record in logs/history
-      await fetch("http://localhost:3001/logs", {
+      await fetch("/api/backend/logs", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
           type: "success",
           action: "Diffusion de contenu",
           source: "Chef d'Agence",
           user: user.name || user.email || "Chef",
-          details: `Diffusion de "${content?.title}" sur ${selectedScreens.length} écran(s) pour une durée de ${duration}s.`
+          details: `Assignation de "${content?.title}" sur ${targetScreenIds.length} écran(s) pour une durée de ${duration}s.`
         })
       });
 
-      // Simulation of assigning content to screen
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
         setSelectedScreens([]);
+        setSelectedAgencyIds([]);
         setSelectedContentId(null);
         setDuration("");
       }, 3000);
@@ -212,6 +240,55 @@ export default function ChefContentPage() {
       alert("Une erreur est survenue lors de la diffusion.");
     } finally {
       setIsDiffusing(false);
+    }
+  };
+
+  const handleCreateContent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreating(true);
+    try {
+      let res: Response;
+      const type = (createFormData.type || "").toLowerCase();
+      if (type === "url" || type === "message") {
+        res = await fetch("/api/backend/content/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: createFormData.title,
+            type,
+            url: type === "url" ? createFormData.url : undefined,
+            message: type === "message" ? createFormData.message : undefined,
+          }),
+        });
+      } else {
+        if (!createFile) throw new Error("Veuillez sélectionner un fichier.");
+        const data = new FormData();
+        data.append("file", createFile);
+        data.append("title", createFormData.title);
+        data.append("type", createFormData.type);
+        res = await fetch("/api/backend/content/upload", { method: "POST", body: data });
+      }
+
+      if (!res.ok) throw new Error("Création du contenu échouée");
+      setIsCreateModalOpen(false);
+      setCreateFormData({ title: "", type: "message", url: "", message: "" });
+      setCreateFile(null);
+      fetchContents();
+    } catch (err: any) {
+      alert(err?.message || "Erreur lors de la création");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleDeleteContent = async (contentId: string) => {
+    if (!window.confirm("Supprimer ce contenu ?")) return;
+    try {
+      const res = await fetch(`/api/backend/content/${contentId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Suppression impossible");
+      fetchContents();
+    } catch (err: any) {
+      alert(err?.message || "Erreur lors de la suppression");
     }
   };
 
@@ -232,17 +309,27 @@ export default function ChefContentPage() {
             <h1 className="text-3xl font-bold text-foreground tracking-tight">Portail de Diffusion</h1>
             <p className="text-muted-foreground mt-2">Choisissez un contenu disponible et diffusez-le sur vos écrans.</p>
           </div>
-          <button 
-            type="button"
-            onClick={() => {
-               fetchData();
-               fetchContents();
-            }}
-            className="p-2.5 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all active:rotate-180 duration-500"
-            title="Rafraîchir"
-          >
-            <RefreshCcw size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all flex items-center gap-2"
+            >
+              <Plus size={16} />
+              Ajouter contenu
+            </button>
+            <button 
+              type="button"
+              onClick={() => {
+                 fetchData();
+                 fetchContents();
+              }}
+              className="p-2.5 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all active:rotate-180 duration-500"
+              title="Rafraîchir"
+            >
+              <RefreshCcw size={20} />
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleDiffusion} className="soft-card p-8 shadow-sm relative overflow-hidden flex flex-col h-[600px]">
@@ -329,6 +416,14 @@ export default function ChefContentPage() {
                        >
                           <Edit2 size={14} />
                        </button>
+                       <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteContent(item._id || item.id); }}
+                          className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors border border-destructive/20 opacity-0 group-hover:opacity-100"
+                          title="Supprimer"
+                       >
+                          <Trash2 size={14} />
+                       </button>
                        <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all ${
                           selectedContentId === (item._id || item.id) 
                             ? 'bg-primary border-primary' 
@@ -370,6 +465,27 @@ export default function ChefContentPage() {
       {/* Targets Sidebar */}
       <div className="w-full lg:w-96 space-y-6">
         <div className="soft-card p-6 shadow-sm h-[600px] flex flex-col">
+           <div className="mb-4 border-b border-border/50 pb-4">
+              <h3 className="text-sm font-bold text-foreground mb-3">Agences ciblées ({selectedAgencyIds.length})</h3>
+              <div className="max-h-28 overflow-y-auto custom-scrollbar pr-1 space-y-2">
+                {myAgencies.map((agency: any) => {
+                  const id = agency._id || agency.id;
+                  const checked = selectedAgencyIds.includes(id);
+                  return (
+                    <button
+                      type="button"
+                      key={id}
+                      onClick={() => handleToggleAgency(id)}
+                      className={`w-full text-left p-2 rounded-lg border transition-colors ${
+                        checked ? "bg-primary/10 border-primary/40 text-foreground" : "bg-muted/30 border-transparent text-muted-foreground hover:border-border"
+                      }`}
+                    >
+                      <p className="text-xs font-semibold">{agency.name}</p>
+                    </button>
+                  );
+                })}
+              </div>
+           </div>
            <div className="flex items-center justify-between mb-6 border-b border-border/50 pb-4">
               <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
                  <MonitorSmartphone size={18} className="text-primary" />
@@ -492,6 +608,43 @@ export default function ChefContentPage() {
                  </div>
               </form>
            </div>
+        </div>
+      )}
+
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-md" onClick={() => !isCreating && setIsCreateModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-border bg-muted/30 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-foreground">Ajouter un contenu</h3>
+              <button onClick={() => !isCreating && setIsCreateModalOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleCreateContent} className="p-6 space-y-4">
+              <input required value={createFormData.title} onChange={(e) => setCreateFormData((p: any) => ({ ...p, title: e.target.value }))} placeholder="Titre" className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground" />
+              <select value={createFormData.type} onChange={(e) => setCreateFormData((p: any) => ({ ...p, type: e.target.value }))} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground">
+                <option value="image">Image</option>
+                <option value="video">Vidéo</option>
+                <option value="url">URL</option>
+                <option value="message">Message</option>
+              </select>
+              {(createFormData.type === "image" || createFormData.type === "video") ? (
+                <input type="file" accept={createFormData.type === "image" ? "image/*" : "video/*"} onChange={(e) => setCreateFile(e.target.files?.[0] || null)} className="w-full text-sm text-muted-foreground" />
+              ) : null}
+              {createFormData.type === "url" ? (
+                <input required value={createFormData.url || ""} onChange={(e) => setCreateFormData((p: any) => ({ ...p, url: e.target.value }))} placeholder="https://..." className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground" />
+              ) : null}
+              {createFormData.type === "message" ? (
+                <textarea required rows={4} value={createFormData.message || ""} onChange={(e) => setCreateFormData((p: any) => ({ ...p, message: e.target.value }))} placeholder="Votre message..." className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground resize-none" />
+              ) : null}
+              <div className="pt-2 flex justify-end gap-3">
+                <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">Annuler</button>
+                <button type="submit" disabled={isCreating} className="bg-primary hover:opacity-90 disabled:opacity-50 text-primary-foreground px-5 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2">
+                  {isCreating ? <Loader2 size={16} className="animate-spin" /> : null}
+                  Créer
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

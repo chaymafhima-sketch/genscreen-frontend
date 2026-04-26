@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { MonitorPlay, ChevronRight, LogOut, User, Mail } from "lucide-react";
 import React from "react";
+import { signOut, useSession } from "next-auth/react";
 
 export interface SidebarLinkType {
   href: string;
@@ -15,18 +16,8 @@ export default function Sidebar({ links, role }: { links: SidebarLinkType[], rol
   const pathname = usePathname();
   const router = useRouter();
 
-  const [userData, setUserData] = React.useState<{name?: string, fullname?: string, email?: string}>({});
-
-  React.useEffect(() => {
-    const user = localStorage.getItem("user");
-    if (user) {
-      try {
-        setUserData(JSON.parse(user));
-      } catch (e) {
-        console.error("Erreur sidebar user data", e);
-      }
-    }
-  }, []);
+  const { data: session } = useSession();
+  const userData = ((session as any)?.user || {}) as {name?: string, fullname?: string, email?: string};
 
   // On considère un lien actif si :
   // 1. C'est le lien "Vue d'ensemble" (exactement /dashboard/admin ou /dashboard/chef)
@@ -39,9 +30,7 @@ export default function Sidebar({ links, role }: { links: SidebarLinkType[], rol
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    router.push("/login");
+    signOut({ callbackUrl: "/login" });
   };
 
   return (

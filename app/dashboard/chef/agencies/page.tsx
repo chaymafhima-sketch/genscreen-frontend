@@ -34,26 +34,16 @@ export default function ChefAgenciesPage() {
 
   const fetchMyAgencies = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("user");
-      if (!storedUser || !token) return;
-
-      const user = JSON.parse(storedUser);
+      const profileRes = await fetch("/api/backend/users/profile", { cache: "no-store" });
+      const user = profileRes.ok ? await profileRes.json() : null;
+      if (!user) return;
       setUserData(user);
 
-      const res = await fetch("http://localhost:3001/agencies", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const res = await fetch("/api/backend/agencies", { cache: "no-store" });
       if (res.ok) {
-        const allAgencies = await res.json();
-        const filtered = allAgencies.filter((a: any) => {
-          const uCity = (user.city || "").toLowerCase().trim();
-          const aCity = (a.city || "").toLowerCase().trim();
-          const aAddr = (a.address || "").toLowerCase().trim();
-          
-          return uCity && (aCity === uCity || aAddr === uCity || aAddr.includes(uCity));
-        });
-        setAgencies(filtered);
+        // Backend should already return only agencies assigned to current chef
+        const assignedAgencies = await res.json();
+        setAgencies(assignedAgencies || []);
       }
     } catch (err) {
       console.error(err);
@@ -69,18 +59,14 @@ export default function ChefAgenciesPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette agence ?")) return;
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/agencies/${id}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const res = await fetch(`/api/backend/agencies/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
 
       // Log deletion
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      await fetch("http://localhost:3001/logs", {
+      const user = userData || {};
+      await fetch("/api/backend/logs", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "warning",
           action: "Suppression agence",
@@ -111,12 +97,10 @@ export default function ChefAgenciesPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/agencies/${editingId}`, {
+      const res = await fetch(`/api/backend/agencies/${editingId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       });
@@ -124,10 +108,10 @@ export default function ChefAgenciesPage() {
       if (!res.ok) throw new Error("Erreur lors de l'enregistrement");
 
       // Log modification
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      await fetch("http://localhost:3001/logs", {
+      const user = userData || {};
+      await fetch("/api/backend/logs", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "info",
           action: "Modification agence",
@@ -196,7 +180,7 @@ export default function ChefAgenciesPage() {
                <Building2 size={48} className="text-muted-foreground/30 mb-4" />
                <p className="text-lg font-bold text-foreground">Aucune agence trouvée</p>
                <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                 Nous n'avons trouvé aucune agence correspondant à votre zone : <span className="font-bold text-primary">{userData?.city || "Non définie"}</span>
+                 Aucune agence assignée pour le moment à votre compte.
                </p>
             </div>
           ) : (

@@ -3,35 +3,37 @@
 import { useEffect, useState } from "react";
 import { 
   Building2, 
-  AlertTriangle, 
+  UserCheck,
   FileVideo, 
   TrendingUp, 
-  TrendingDown, 
-  Activity,
+  MonitorSmartphone,
   ArrowUpRight
 } from "lucide-react";
 
 export default function Stats() {
-  const [data, setData] = useState({ contents: 0, agencies: 0 });
+  const [data, setData] = useState({ contents: 0, agencies: 0, users: 0, screens: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const headers = { "Authorization": `Bearer ${token}` };
-
-        const [resContent, resAgencies] = await Promise.all([
-          fetch("http://localhost:3001/content", { headers }),
-          fetch("http://localhost:3001/agencies", { headers })
+        const [resContent, resAgencies, resUsers, resScreens] = await Promise.all([
+          fetch("/api/backend/content", { cache: "no-store" }),
+          fetch("/api/backend/agencies", { cache: "no-store" }),
+          fetch("/api/backend/users", { cache: "no-store" }),
+          fetch("/api/backend/screens", { cache: "no-store" }),
         ]);
 
         const contents = resContent.ok ? await resContent.json() : [];
         const agencies = resAgencies.ok ? await resAgencies.json() : [];
+        const users = resUsers.ok ? await resUsers.json() : [];
+        const screens = resScreens.ok ? await resScreens.json() : [];
 
         setData({
           contents: contents.length,
           agencies: agencies.length,
+          users: users.filter((u: any) => u.role === "chef").length,
+          screens: screens.length,
         });
 
       } catch (err) {
@@ -48,7 +50,7 @@ export default function Stats() {
     {
       title: "Agences Partenaires",
       value: loading ? "..." : data.agencies.toString(),
-      trend: "+12.5%",
+      trend: "Réseau",
       trendUp: true,
       icon: <Building2 size={20} />,
       color: "text-indigo-400",
@@ -57,26 +59,37 @@ export default function Stats() {
       glow: "shadow-indigo-500/10",
     },
     {
-      title: "Alertes Système",
-      value: "2",
-      trend: "Critique",
-      trendUp: false,
-      icon: <AlertTriangle size={20} />,
-      color: "text-red-400",
-      bgBase: "bg-red-400/10",
-      borderBase: "border-red-400/20",
-      glow: "shadow-red-500/10",
+      title: "Chefs d'Agence",
+      value: loading ? "..." : data.users.toString(),
+      trend: "Utilisateurs",
+      trendUp: true,
+      icon: <UserCheck size={20} />,
+      color: "text-amber-500",
+      bgBase: "bg-amber-500/10",
+      borderBase: "border-amber-500/20",
+      glow: "shadow-amber-500/10",
     },
     {
       title: "Médias Diffusés",
       value: loading ? "..." : data.contents.toString(),
-      trend: "+4.2k",
+      trend: "Bibliothèque",
       trendUp: true,
       icon: <FileVideo size={20} />,
       color: "text-emerald-400",
       bgBase: "bg-emerald-400/10",
       borderBase: "border-emerald-400/20",
       glow: "shadow-emerald-500/10",
+    },
+    {
+      title: "Écrans enregistrés",
+      value: loading ? "..." : data.screens.toString(),
+      trend: "Parc",
+      trendUp: true,
+      icon: <MonitorSmartphone size={20} />,
+      color: "text-violet-500",
+      bgBase: "bg-violet-500/10",
+      borderBase: "border-violet-500/20",
+      glow: "shadow-violet-500/10",
     },
   ];
 

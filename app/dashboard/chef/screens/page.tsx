@@ -18,7 +18,8 @@ import {
   Globe,
   Edit2,
   Trash2,
-  X
+  X,
+  FileVideo
 } from "lucide-react";
 
 export default function ChefScreensPage() {
@@ -27,6 +28,7 @@ export default function ChefScreensPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [userData, setUserData] = useState<any>(null);
   const [myAgencies, setMyAgencies] = useState<any[]>([]);
+  const [contents, setContents] = useState<any[]>([]);
   
   // Modal & Form state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,36 +36,28 @@ export default function ChefScreensPage() {
   const [formData, setFormData] = useState({ name: '', macAddress: '', agencyId: '', location: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [isContentModalOpen, setIsContentModalOpen] = useState(false);
+  const [screenForContent, setScreenForContent] = useState<any>(null);
+  const [selectedContentIds, setSelectedContentIds] = useState<string[]>([]);
+  const [isAssigningContent, setIsAssigningContent] = useState(false);
 
   const fetchData = async (isBackground = false) => {
     if (!isBackground) setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("user");
-      if (!storedUser || !token) return;
-      
-      const user = JSON.parse(storedUser);
+      const profileRes = await fetch("/api/backend/users/profile", { cache: "no-store" });
+      const user = profileRes.ok ? await profileRes.json() : null;
+      if (!user) return;
       setUserData(user);
 
-      const agenciesRes = await fetch("http://localhost:3001/agencies", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const agenciesRes = await fetch("/api/backend/agencies", { cache: "no-store" });
 
         if (agenciesRes.ok) {
-          const allAgencies = await agenciesRes.json();
-          const filteredAgencies = allAgencies.filter((a: any) => {
-            const uCity = (user.city || "").toLowerCase().trim();
-            const aCity = (a.city || "").toLowerCase().trim();
-            const aAddr = (a.address || "").toLowerCase().trim();
-            
-            return uCity && (aCity === uCity || aAddr === uCity || aAddr.includes(uCity));
-          });
+          // Backend should already return only agencies assigned to current chef
+          const filteredAgencies = await agenciesRes.json();
           setMyAgencies(filteredAgencies);
           
           // Continue with screens fetch...
-          const screensRes = await fetch("http://localhost:3001/screens", {
-            headers: { "Authorization": `Bearer ${token}` }
-          });
+          const screensRes = await fetch("/api/backend/screens", { cache: "no-store" });
           if (screensRes.ok) {
              const allScreens = await screensRes.json();
              const agencyIds = new Set(filteredAgencies.map((a: { _id: any; id: any }) => a._id || a.id));
@@ -71,6 +65,12 @@ export default function ChefScreensPage() {
              setScreens(filteredScreens);
           }
         }
+
+      const contentRes = await fetch("/api/backend/content", { cache: "no-store" });
+      if (contentRes.ok) {
+        const contentData = await contentRes.json();
+        setContents(contentData);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -87,18 +87,14 @@ export default function ChefScreensPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet écran ?")) return;
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/screens/${id}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const res = await fetch(`/api/backend/screens/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
       
       // Log deletion
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      await fetch("http://localhost:3001/logs", {
+      const user = userData || {};
+      await fetch("/api/backend/logs", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "warning",
           action: "Suppression écran",
@@ -125,16 +121,65 @@ export default function ChefScreensPage() {
     setIsModalOpen(true);
   };
 
+  const openContentModal = async (screen: any) => {
+    setScreenForContent(screen);
+    setIsContentModalOpen(true);
+    setSelectedContentIds([]);
+    try {
+      const res = await fetch(`/api/backend/screens/${screen._id || screen.id}/content`, { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedContentIds((data || []).map((c: any) => c?._id || c?.id).filter(Boolean));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const toggleContentSelection = (contentId: string) => {
+    setSelectedContentIds((prev) =>
+      prev.includes(contentId) ? prev.filter((id) => id !== contentId) : [...prev, contentId]
+    );
+  };
+
+  const applyContentAction = async (mode: "replace" | "add" | "remove") => {
+    if (!screenForContent) return;
+    if (selectedContentIds.length === 0) {
+      alert("Veuillez sélectionner au moins un contenu.");
+      return;
+    }
+    const screenId = screenForContent._id || screenForContent.id;
+    const endpoint =
+      mode === "replace"
+        ? `/api/backend/screens/${screenId}/content`
+        : mode === "add"
+          ? `/api/backend/screens/${screenId}/content/add`
+          : `/api/backend/screens/${screenId}/content/remove`;
+
+    setIsAssigningContent(true);
+    try {
+      const res = await fetch(endpoint, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentIds: selectedContentIds }),
+      });
+      if (!res.ok) throw new Error("Erreur lors de la mise à jour");
+      alert("Assignation mise à jour.");
+    } catch (err: any) {
+      alert(err?.message || "Échec de l'assignation.");
+    } finally {
+      setIsAssigningContent(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/screens/${editingId}`, {
+      const res = await fetch(`/api/backend/screens/${editingId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       });
@@ -142,10 +187,10 @@ export default function ChefScreensPage() {
       if (!res.ok) throw new Error("Erreur lors de l'enregistrement");
       
       // Log modification
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      await fetch("http://localhost:3001/logs", {
+      const user = userData || {};
+      await fetch("/api/backend/logs", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "info",
           action: "Modification écran",
@@ -228,6 +273,9 @@ export default function ChefScreensPage() {
                     <MonitorSmartphone size={24} />
                   </div>
                   <div className="flex gap-2">
+                    <button onClick={() => openContentModal(screen)} className="p-2 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 rounded-xl transition-colors border border-emerald-500/20" title="Gérer contenus">
+                       <FileVideo size={16} />
+                    </button>
                     <button onClick={() => openEditModal(screen)} className="p-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl transition-colors border border-primary/20" title="Modifier">
                        <Edit2 size={16} />
                     </button>
@@ -356,6 +404,50 @@ export default function ChefScreensPage() {
                 </form>
               )}
            </div>
+        </div>
+      )}
+
+      {isContentModalOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-md" onClick={() => !isAssigningContent && setIsContentModalOpen(false)} />
+          <div className="relative w-full max-w-2xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-border bg-muted/30 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Gérer contenus de l'écran</h3>
+                <p className="text-xs text-muted-foreground mt-1">{screenForContent?.name || "Écran"}</p>
+              </div>
+              <button onClick={() => !isAssigningContent && setIsContentModalOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 max-h-[420px] overflow-y-auto space-y-2">
+              {contents.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Aucun contenu disponible.</p>
+              ) : (
+                contents.map((content: any) => {
+                  const id = content._id || content.id;
+                  const checked = selectedContentIds.includes(id);
+                  return (
+                    <label key={id} className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted/40 transition-colors cursor-pointer">
+                      <input type="checkbox" checked={checked} onChange={() => toggleContentSelection(id)} className="h-4 w-4 accent-[var(--primary)]" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{content.title || "Sans titre"}</p>
+                        <p className="text-[11px] text-muted-foreground uppercase">{content.type || "unknown"}</p>
+                      </div>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+            <div className="p-6 border-t border-border bg-muted/20 flex flex-wrap justify-end gap-2">
+              <button type="button" disabled={isAssigningContent} onClick={() => applyContentAction("remove")} className="px-4 py-2 rounded-xl text-sm font-medium border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50">Retirer</button>
+              <button type="button" disabled={isAssigningContent} onClick={() => applyContentAction("add")} className="px-4 py-2 rounded-xl text-sm font-medium border border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 transition-colors disabled:opacity-50">Ajouter</button>
+              <button type="button" disabled={isAssigningContent} onClick={() => applyContentAction("replace")} className="px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50 flex items-center gap-2">
+                {isAssigningContent ? <Loader2 size={14} className="animate-spin" /> : null}
+                Remplacer
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

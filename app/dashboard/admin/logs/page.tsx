@@ -48,10 +48,7 @@ export default function LogsPage() {
   const fetchLogs = async (showLoading = false) => {
     if (showLoading) setIsRefreshing(true);
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/logs", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const res = await fetch("/api/backend/logs", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setLogs(data);

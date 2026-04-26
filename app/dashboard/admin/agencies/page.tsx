@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, X, Loader2, AlertCircle, Building2, MapPin, Phone, Building, Edit2, Trash2, Search, Globe, RefreshCcw } from "lucide-react";
+import { Plus, X, Loader2, AlertCircle, Building2, MapPin, Phone, Building, Edit2, Trash2, Search, Globe, RefreshCcw, Users } from "lucide-react";
 import { TUNISIA_CITIES } from "@/app/lib/constants/tunisia-cities";
 
 export default function AgenciesPage() {
@@ -10,18 +10,32 @@ export default function AgenciesPage() {
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({ name: '', address: '', city: '', phone: '' });
+  const [users, setUsers] = useState<any[]>([]);
+  const [userIds, setUserIds] = useState<string[]>([]);
+  const [initialUserIds, setInitialUserIds] = useState<string[]>([]);
+  const [usersQuery, setUsersQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch("/api/backend/users", { cache: "no-store" });
+      if (!res.ok) throw new Error("Erreur de récupération des utilisateurs");
+      const data = await res.json();
+      setUsers(data || []);
+    } catch (err: any) {
+      // Keep agencies screen usable even if users fetch fails
+      console.error(err?.message || err);
+      setUsers([]);
+    }
+  };
+
   const fetchAgencies = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/agencies", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const res = await fetch("/api/backend/agencies", { cache: "no-store" });
       if (!res.ok) throw new Error("Erreur de récupération des agences");
       const data = await res.json();
       setAgencies(data);
@@ -34,15 +48,14 @@ export default function AgenciesPage() {
 
   useEffect(() => {
     fetchAgencies();
+    fetchUsers();
   }, []);
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette agence ?")) return;
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/agencies/${id}`, {
+      const res = await fetch(`/api/backend/agencies/${id}`, {
         method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
       });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
       fetchAgencies();
@@ -54,38 +67,69 @@ export default function AgenciesPage() {
   const openEditModal = (agency: any) => {
     setEditingId(agency._id || agency.id);
     setFormData({ name: agency.name || '', address: agency.address || '', city: agency.city || '', phone: agency.phone || '' });
+
+    const currentUserIds: string[] =
+      agency?.userIds ||
+      agency?.users?.map((u: any) => u?._id || u?.id).filter(Boolean) ||
+      [];
+
+    setUserIds(currentUserIds);
+    setInitialUserIds(currentUserIds);
+    setUsersQuery("");
     setIsModalOpen(true);
   };
 
   const openAddModal = () => {
     setEditingId(null);
     setFormData({ name: '', address: '', city: '', phone: '' });
+    setUserIds([]);
+    setInitialUserIds([]);
+    setUsersQuery("");
     setIsModalOpen(true);
+  };
+
+  const arraysEqual = (a: string[], b: string[]) => {
+    if (a.length !== b.length) return false;
+    const sa = [...a].sort();
+    const sb = [...b].sort();
+    for (let i = 0; i < sa.length; i++) if (sa[i] !== sb[i]) return false;
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
       let res;
       if (editingId) {
-        res = await fetch(`http://localhost:3001/agencies/${editingId}`, {
+        // If users changed, assign/replace via dedicated endpoint (admin only)
+        if (!arraysEqual(userIds, initialUserIds)) {
+          const assignRes = await fetch(`/api/backend/agencies/${editingId}/assign-users`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ userIds })
+          });
+          if (!assignRes.ok) throw new Error("Erreur lors de l'assignation des utilisateurs");
+          setInitialUserIds(userIds);
+        }
+
+        res = await fetch(`/api/backend/agencies/${editingId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
           },
           body: JSON.stringify(formData)
         });
       } else {
-        res = await fetch("http://localhost:3001/agencies", {
+        if (!userIds.length) throw new Error("Veuillez sélectionner au moins un utilisateur");
+        res = await fetch("/api/backend/agencies", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
           },
-          body: JSON.stringify(formData)
+          body: JSON.stringify({ ...formData, userIds })
         });
       }
       
@@ -96,6 +140,8 @@ export default function AgenciesPage() {
         setIsModalOpen(false);
         setSubmitSuccess(false);
         setFormData({ name: '', address: '', city: '', phone: '' });
+        setUserIds([]);
+        setInitialUserIds([]);
         setEditingId(null);
       }, 1500);
     } catch (err) {
@@ -104,6 +150,13 @@ export default function AgenciesPage() {
       setIsSubmitting(false);
     }
   };
+
+  const filteredUsers = users.filter((u: any) => {
+    const q = usersQuery.toLowerCase().trim();
+    if (!q) return true;
+    const label = `${u?.fullname || u?.name || ""} ${u?.email || ""} ${u?.role || ""}`.toLowerCase();
+    return label.includes(q);
+  });
 
   const filteredAgencies = agencies.filter(agency => 
     (agency.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -173,37 +226,69 @@ export default function AgenciesPage() {
                   <th scope="col" className="px-6 py-4">Ville</th>
                   <th scope="col" className="px-6 py-4">Quartier / Adresse</th>
                   <th scope="col" className="px-6 py-4">Contact</th>
+                  <th scope="col" className="px-6 py-4">Téléphone</th>
+                  <th scope="col" className="px-6 py-4">Utilisateurs assignés</th>
                   <th scope="col" className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40 transition-colors">
-                {filteredAgencies.map((agency: any) => (
-                  <tr key={agency._id || agency.id} className="hover:bg-muted/30 transition-colors group">
-                    <td className="px-6 py-4 font-medium text-foreground flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                        <Building2 size={18} />
-                      </div>
-                      {agency.name}
-                    </td>
-                    <td className="px-6 py-4 font-bold text-primary">
-                      {agency.city || "—"}
-                    </td>
-                    <td className="px-6 py-4 text-xs">
-                      {agency.address}
-                    </td>
-                    <td className="px-6 py-4">
-                      {agency.phone}
-                    </td>
-                    <td className="px-6 py-4 text-right space-x-2">
-                       <button onClick={() => openEditModal(agency)} className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors border border-primary/20" title="Modifier">
-                          <Edit2 size={16} />
-                       </button>
-                       <button onClick={() => handleDelete(agency._id || agency.id)} className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors border border-destructive/20" title="Supprimer">
-                          <Trash2 size={16} />
-                       </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredAgencies.map((agency: any) => {
+                  const agencyUserIds: string[] =
+                    agency?.userIds ||
+                    agency?.users?.map((u: any) => u?._id || u?.id).filter(Boolean) ||
+                    [];
+
+                  const assignedUsers = users.filter((u: any) => agencyUserIds.includes(u._id || u.id));
+
+                  return (
+                    <tr key={agency._id || agency.id} className="hover:bg-muted/30 transition-colors group">
+                      <td className="px-6 py-4 font-medium text-foreground flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                          <Building2 size={18} />
+                        </div>
+                        {agency.name}
+                      </td>
+                      <td className="px-6 py-4 font-bold text-primary">
+                        {agency.city || "—"}
+                      </td>
+                      <td className="px-6 py-4 text-xs">
+                        {agency.address || "—"}
+                      </td>
+                      <td className="px-6 py-4">
+                        {agency.phone || "—"}
+                      </td>
+                      <td className="px-6 py-4">
+                        {assignedUsers.length === 0 ? (
+                          <span className="text-xs text-muted-foreground">Aucun utilisateur</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5">
+                            {assignedUsers.slice(0, 3).map((u: any) => (
+                              <span
+                                key={u._id || u.id}
+                                className="px-2 py-1 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20"
+                              >
+                                {u.fullname || u.name || u.email || "User"}
+                              </span>
+                            ))}
+                            {assignedUsers.length > 3 ? (
+                              <span className="px-2 py-1 rounded-full text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
+                                +{assignedUsers.length - 3}
+                              </span>
+                            ) : null}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right space-x-2">
+                         <button onClick={() => openEditModal(agency)} className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors border border-primary/20" title="Modifier">
+                            <Edit2 size={16} />
+                         </button>
+                         <button onClick={() => handleDelete(agency._id || agency.id)} className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors border border-destructive/20" title="Supprimer">
+                            <Trash2 size={16} />
+                         </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
@@ -276,11 +361,73 @@ export default function AgenciesPage() {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Users size={16} className="text-primary" />
+                    Utilisateurs assignés {editingId ? <span className="text-xs text-muted-foreground/70">(remplacer)</span> : <span className="text-xs text-muted-foreground/70">(obligatoire)</span>}
+                  </label>
+
+                  <input
+                    type="text"
+                    value={usersQuery}
+                    onChange={(e) => setUsersQuery(e.target.value)}
+                    placeholder="Rechercher un utilisateur (nom, email, rôle)..."
+                    className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
+                  />
+
+                  <div className="w-full bg-background border border-border rounded-xl p-3 max-h-56 overflow-auto space-y-2">
+                    {filteredUsers.length === 0 ? (
+                      <div className="text-sm text-muted-foreground py-2">Aucun utilisateur trouvé.</div>
+                    ) : (
+                      filteredUsers.map((u: any) => {
+                        const id = (u._id || u.id) as string | undefined;
+                        if (!id) return null;
+                        const checked = userIds.includes(id);
+                        const label = u.fullname || u.name || u.email || id;
+                        return (
+                          <label
+                            key={id}
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/40 transition-colors cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => {
+                                const next = e.target.checked
+                                  ? Array.from(new Set([...userIds, id]))
+                                  : userIds.filter((x) => x !== id);
+                                setUserIds(next);
+                              }}
+                              className="h-4 w-4 accent-[var(--primary)]"
+                            />
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-foreground truncate">{label}</div>
+                              <div className="text-[11px] text-muted-foreground truncate">
+                                {u.email ? u.email : "—"}{u.role ? ` • ${u.role}` : ""}
+                              </div>
+                            </div>
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground/80">
+                    <span>{userIds.length} sélectionné(s)</span>
+                    <button
+                      type="button"
+                      onClick={() => setUserIds([])}
+                      className="hover:text-foreground transition-colors"
+                    >
+                      Tout désélectionner
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <MapPin size={16} className="text-primary" />
-                    Quartier / Adresse exacte
+                    Quartier / Adresse exacte <span className="text-xs text-muted-foreground/70">(optionnel)</span>
                   </label>
                   <input
-                    required
                     type="text"
                     value={formData.address}
                     onChange={(e) => setFormData({...formData, address: e.target.value})}
@@ -292,10 +439,9 @@ export default function AgenciesPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Phone size={16} className="text-primary" />
-                    Numéro de contact
+                    Numéro de contact <span className="text-xs text-muted-foreground/70">(optionnel)</span>
                   </label>
                   <input
-                    required
                     type="text"
                     value={formData.phone}
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}

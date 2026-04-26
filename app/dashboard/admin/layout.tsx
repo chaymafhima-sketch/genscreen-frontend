@@ -2,7 +2,7 @@
 
 import Sidebar, { SidebarLinkType } from "../components/Sidebar";
 import Header from "../components/Header";
-import { LayoutDashboard, Building2, MonitorSmartphone, FileVideo, Activity, UserCheck } from "lucide-react";
+import { LayoutDashboard, Building2, MonitorSmartphone, FileVideo, Activity, UserCheck, User } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const adminLinks: SidebarLinkType[] = [
@@ -11,12 +11,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: "/dashboard/admin/users", label: "Chefs d'Agence", icon: <UserCheck size={20} /> },
     { href: "/dashboard/admin/screens", label: "Écrans", icon: <MonitorSmartphone size={20} /> },
     { href: "/dashboard/admin/content", label: "Contenus", icon: <FileVideo size={20} /> },
+    // { href: "/dashboard/admin/profile", label: "Profil", icon: <User size={20} /> },
     { href: "/dashboard/admin/logs", label: "Historique", icon: <Activity size={20} /> },
   ];
 
   return (
     <div className="flex min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 transition-colors duration-300">
-      <Sidebar links={adminLinks} role="Administrateur" />
+      <Sidebar links={adminLinks} role="admin" />
       <div className="flex-1 ml-72 relative flex flex-col min-h-screen">
         <Header />
         <main className="p-8 flex-1 overflow-x-hidden">

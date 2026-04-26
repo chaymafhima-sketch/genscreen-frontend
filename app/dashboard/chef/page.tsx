@@ -27,55 +27,32 @@ export default function ChefDashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const storedUser = localStorage.getItem("user");
-      const token = localStorage.getItem("token");
-      
       let currentUser = userData;
 
-      if (storedUser && token) {
-        try {
-          const initialUser = JSON.parse(storedUser);
-          setUserData(initialUser);
-          currentUser = initialUser;
-
-          const res = await fetch("http://localhost:3001/users/profile", {
-            headers: { "Authorization": `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const latestUser = await res.json();
-            setUserData(latestUser);
-            currentUser = latestUser;
-            localStorage.setItem("user", JSON.stringify(latestUser));
-          }
-        } catch (e) {
-          console.error("Erreur profile fetch", e);
+      try {
+        const res = await fetch("/api/backend/users/profile", { cache: "no-store" });
+        if (res.ok) {
+          const latestUser = await res.json();
+          setUserData(latestUser);
+          currentUser = latestUser;
         }
+      } catch (e) {
+        console.error("Erreur profile fetch", e);
       }
       setLoading(false);
 
       // Fetch Agencies
-      if (token) {
-        try {
-          const res = await fetch("http://localhost:3001/agencies", {
-            headers: { "Authorization": `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const allAgencies = await res.json();
-            // Inclusive Filtering: City Match OR Address Match (for migration safety)
-            const filtered = allAgencies.filter((a: any) => {
-              const uCity = (currentUser.city || "").toLowerCase().trim();
-              const aCity = (a.city || "").toLowerCase().trim();
-              const aAddr = (a.address || "").toLowerCase().trim();
-              
-              return uCity && (aCity === uCity || aAddr === uCity || aAddr.includes(uCity));
-            });
-            setAgencies(filtered);
-          }
-        } catch (e) {
-          console.error("Erreur fetch agencies", e);
-        } finally {
-          setLoadingAgencies(false);
+      try {
+        const res = await fetch("/api/backend/agencies", { cache: "no-store" });
+        if (res.ok) {
+          // Backend should already return only agencies assigned to current chef
+          const assignedAgencies = await res.json();
+          setAgencies(assignedAgencies || []);
         }
+      } catch (e) {
+        console.error("Erreur fetch agencies", e);
+      } finally {
+        setLoadingAgencies(false);
       }
     };
 

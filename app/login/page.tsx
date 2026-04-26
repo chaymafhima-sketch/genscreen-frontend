@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, ArrowRight, MonitorPlay, AlertCircle, CheckCircle2 } from "lucide-react";
+import { signIn, useSession } from "next-auth/react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   const [form, setForm] = useState({
     email: "",
@@ -15,6 +17,14 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  useEffect(() => {
+    if (status === "authenticated") {
+      const role = (session?.user as { role?: string } | undefined)?.role;
+      const target = role === "admin" ? "/dashboard/admin" : "/dashboard/chef";
+      router.replace(target);
+    }
+  }, [status, session, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -22,59 +32,26 @@ export default function LoginPage() {
     setSuccess("");
 
     try {
-      const res = await fetch("http://localhost:3001/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
+      const result = await signIn("credentials", {
+        redirect: false,
+        email: form.email,
+        password: form.password,
       });
 
-      const data = await res.json();
-
-      if (res.ok && data.access_token) {
+      if (result?.ok) {
         setSuccess("Connexion réussie ! Redirection...");
-        localStorage.setItem("token", data.access_token);
-        
-        // On s'assure que l'email est bien présent dans l'objet utilisateur
-        const userToStore = {
-          ...data.user,
-          email: data.user?.email || form.email,
-          name: data.user?.name || data.user?.fullname || data.user?.fullName || form.email.split('@')[0]
-        };
-        localStorage.setItem("user", JSON.stringify(userToStore));
-
-        // Enregistrer la connexion dans l'historique
-        fetch("http://localhost:3001/logs", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${data.access_token}`
-          },
-          body: JSON.stringify({
-            type: "info",
-            action: "Connexion utilisateur",
-            source: "Auth",
-            user: userToStore.name || userToStore.email,
-            details: `L'utilisateur s'est connecté avec succès au tableau de bord ${userToStore.role}.`
-          })
-        }).catch(err => console.error("Failed to log login", err));
-
+        // Resolve the target route from authenticated session, then force navigation.
+        const sessionRes = await fetch("/api/auth/session", { cache: "no-store" });
+        const session = sessionRes.ok ? await sessionRes.json() : null;
+        const role = session?.user?.role;
+        const target = role === "admin" ? "/dashboard/admin" : "/dashboard/chef";
         setTimeout(() => {
-          if (data.user.role === "admin") {
-            router.push("/dashboard/admin");
-          } else {
-            router.push("/dashboard/chef");
-          }
-        }, 1200);
+          router.replace(target);
+          // Fallback hard redirect in case client navigation is interrupted.
+          window.location.href = target;
+        }, 900);
       } else {
-        if (data.message === "User not found") {
-          setError("Aucun compte n'est associé à cette adresse email.");
-        } else if (data.message === "Wrong password" || data.message === "Invalid password") {
-          setError("Le mot de passe saisi est incorrect.");
-        } else {
-          setError(data.message || "Email ou mot de passe incorrect.");
-        }
+        setError("Email ou mot de passe incorrect.");
       }
     } catch (err) {
       console.error("Erreur:", err);

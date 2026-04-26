@@ -19,13 +19,15 @@ import {
   Layers,
   Building2,
   Edit2,
-  Trash2
+  Trash2,
+  FileVideo
 } from "lucide-react";
 
 export default function ScreensPage() {
   const [screens, setScreens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [agencies, setAgencies] = useState<any[]>([]);
+  const [contents, setContents] = useState<any[]>([]);
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,15 +36,16 @@ export default function ScreensPage() {
   const [formData, setFormData] = useState({ name: '', macAddress: '', agencyId: '', location: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [isContentModalOpen, setIsContentModalOpen] = useState(false);
+  const [screenForContent, setScreenForContent] = useState<any>(null);
+  const [selectedContentIds, setSelectedContentIds] = useState<string[]>([]);
+  const [isAssigningContent, setIsAssigningContent] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchScreens = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/screens", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const res = await fetch("/api/backend/screens", { cache: "no-store" });
       
       if (!res.ok) throw new Error("Erreur de récupération des écrans");
       const data = await res.json();
@@ -58,10 +61,7 @@ export default function ScreensPage() {
 
   const fetchAgencies = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3001/agencies", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const res = await fetch("/api/backend/agencies", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setAgencies(data);
@@ -71,9 +71,35 @@ export default function ScreensPage() {
     }
   };
 
+  const fetchContents = async () => {
+    try {
+      const res = await fetch("/api/backend/content", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setContents(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchScreenResolvedContent = async (screenId: string) => {
+    try {
+      const res = await fetch(`/api/backend/screens/${screenId}/content`, { cache: "no-store" });
+      if (!res.ok) throw new Error("Erreur de récupération des contenus affectés");
+      const data = await res.json();
+      const ids = (data || []).map((c: any) => c?._id || c?.id).filter(Boolean);
+      setSelectedContentIds(ids);
+    } catch (err) {
+      console.error(err);
+      setSelectedContentIds([]);
+    }
+  };
+
   useEffect(() => {
     fetchScreens();
     fetchAgencies();
+    fetchContents();
     const interval = setInterval(fetchScreens, 15000); // 15s for more real-time feel
     return () => clearInterval(interval);
   }, []);
@@ -81,11 +107,7 @@ export default function ScreensPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet écran ?")) return;
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/screens/${id}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const res = await fetch(`/api/backend/screens/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
       fetchScreens();
     } catch (err: any) {
@@ -105,27 +127,70 @@ export default function ScreensPage() {
     setIsModalOpen(true);
   };
 
+  const openContentModal = async (screen: any) => {
+    setScreenForContent(screen);
+    setIsContentModalOpen(true);
+    setSelectedContentIds([]);
+    await fetchScreenResolvedContent(screen._id || screen.id);
+  };
+
+  const toggleContentSelection = (contentId: string) => {
+    setSelectedContentIds((prev) =>
+      prev.includes(contentId) ? prev.filter((id) => id !== contentId) : [...prev, contentId]
+    );
+  };
+
+  const applyContentAction = async (mode: "replace" | "add" | "remove") => {
+    if (!screenForContent) return;
+    if (selectedContentIds.length === 0) {
+      alert("Veuillez sélectionner au moins un contenu.");
+      return;
+    }
+
+    const screenId = screenForContent._id || screenForContent.id;
+    const endpoint =
+      mode === "replace"
+        ? `/api/backend/screens/${screenId}/content`
+        : mode === "add"
+          ? `/api/backend/screens/${screenId}/content/add`
+          : `/api/backend/screens/${screenId}/content/remove`;
+
+    setIsAssigningContent(true);
+    try {
+      const res = await fetch(endpoint, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentIds: selectedContentIds }),
+      });
+
+      if (!res.ok) throw new Error("Erreur lors de la mise à jour des contenus");
+      await fetchScreenResolvedContent(screenId);
+      alert("Contenus mis à jour avec succès.");
+    } catch (err: any) {
+      alert(err?.message || "Impossible de mettre à jour les contenus.");
+    } finally {
+      setIsAssigningContent(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
       let res;
       if (editingId) {
-        res = await fetch(`http://localhost:3001/screens/${editingId}`, {
+        res = await fetch(`/api/backend/screens/${editingId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
           },
           body: JSON.stringify(formData)
         });
       } else {
-        res = await fetch("http://localhost:3001/screens", {
+        res = await fetch("/api/backend/screens", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
           },
           body: JSON.stringify(formData)
         });
@@ -267,6 +332,9 @@ export default function ScreensPage() {
                 </div>
 
                 <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                   <button onClick={() => openContentModal(screen)} className="p-1.5 bg-emerald-500/80 backdrop-blur-md rounded-lg border border-emerald-500/30 text-white hover:bg-emerald-500 transition-colors" title="Gérer contenus">
+                      <FileVideo size={16} />
+                   </button>
                    <button onClick={() => openEditModal(screen)} className="p-1.5 bg-primary/80 backdrop-blur-md rounded-lg border border-primary/30 text-white hover:bg-primary transition-colors" title="Modifier">
                       <Edit2 size={16} />
                    </button>
@@ -396,6 +464,88 @@ export default function ScreensPage() {
                 </form>
               )}
            </div>
+        </div>
+      )}
+
+      {/* Modal - Content assignment per screen */}
+      {isContentModalOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/60 backdrop-blur-md"
+            onClick={() => !isAssigningContent && setIsContentModalOpen(false)}
+          />
+          <div className="relative w-full max-w-2xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-border bg-muted/30 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Contenus de l'écran</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {screenForContent?.name || "Écran"} - sélectionnez des contenus puis choisissez l'action.
+                </p>
+              </div>
+              <button
+                onClick={() => !isAssigningContent && setIsContentModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 max-h-[420px] overflow-y-auto space-y-2">
+              {contents.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Aucun contenu disponible.</p>
+              ) : (
+                contents.map((content: any) => {
+                  const id = content._id || content.id;
+                  const checked = selectedContentIds.includes(id);
+                  return (
+                    <label
+                      key={id}
+                      className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted/40 cursor-pointer transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleContentSelection(id)}
+                        className="h-4 w-4 accent-[var(--primary)]"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{content.title || "Sans titre"}</p>
+                        <p className="text-[11px] text-muted-foreground uppercase">{content.type || "unknown"}</p>
+                      </div>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="p-6 border-t border-border bg-muted/20 flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={isAssigningContent}
+                onClick={() => applyContentAction("remove")}
+                className="px-4 py-2 rounded-xl text-sm font-medium border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+              >
+                Retirer
+              </button>
+              <button
+                type="button"
+                disabled={isAssigningContent}
+                onClick={() => applyContentAction("add")}
+                className="px-4 py-2 rounded-xl text-sm font-medium border border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
+              >
+                Ajouter (union)
+              </button>
+              <button
+                type="button"
+                disabled={isAssigningContent}
+                onClick={() => applyContentAction("replace")}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {isAssigningContent ? <Loader2 size={14} className="animate-spin" /> : null}
+                Remplacer la liste
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

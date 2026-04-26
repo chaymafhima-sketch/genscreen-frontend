@@ -17,12 +17,9 @@ function SearchContent() {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem("token");
-        const headers = { "Authorization": `Bearer ${token}` };
-
         const [resAgencies, resContent] = await Promise.all([
-          fetch("http://localhost:3001/agencies", { headers }),
-          fetch("http://localhost:3001/content", { headers })
+          fetch("/api/backend/agencies", { cache: "no-store" }),
+          fetch("/api/backend/content", { cache: "no-store" })
         ]);
 
         const agencies = resAgencies.ok ? await resAgencies.json() : [];

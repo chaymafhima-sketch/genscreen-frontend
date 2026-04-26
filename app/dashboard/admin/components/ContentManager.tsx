@@ -12,12 +12,7 @@ export default function ContentManager() {
   useEffect(() => {
     const fetchContents = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:3001/content", {
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
-        });
+        const res = await fetch("/api/backend/content", { cache: "no-store" });
 
         if (!res.ok) {
           throw new Error("Erreur lors de la récupération des contenus");

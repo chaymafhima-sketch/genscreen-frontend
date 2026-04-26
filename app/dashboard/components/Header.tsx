@@ -3,29 +3,30 @@
 import { useEffect, useState, useRef } from "react";
 import { 
   LogOut, 
-  Bell, 
   Search, 
   User, 
   Mail, 
   ChevronDown, 
   Building2, 
   FileVideo, 
+  MonitorSmartphone,
+  UserCheck,
   ArrowRight,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
   Sun,
   Moon
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
+import { signOut, useSession } from "next-auth/react";
 
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
-  const showSearch = pathname === '/dashboard/admin' || pathname === '/dashboard/chef';
+  const showSearch = pathname.startsWith("/dashboard");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [userData, setUserData] = useState<{name?: string, fullname?: string, email?: string, role?: string}>({});
+  const { data: session } = useSession();
+  const userData = ((session as any)?.user || {}) as {name?: string, fullname?: string, email?: string, role?: string};
+  const profilePath = userData.role === "admin" ? "/dashboard/admin/profile" : "/dashboard/chef/profile";
   
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -34,27 +35,16 @@ export default function Header() {
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<{ agencies: any[], contents: any[] }>({ agencies: [], contents: [] });
+  const [searchResults, setSearchResults] = useState<{ agencies: any[], contents: any[], users: any[], screens: any[] }>({ agencies: [], contents: [], users: [], screens: [] });
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   // Notifications State Removed
 
-  useEffect(() => {
-    const user = localStorage.getItem("user");
-    if (user) {
-      try {
-        setUserData(JSON.parse(user));
-      } catch (e) {
-        console.error("Erreur parsing user data", e);
-      }
-    }
-  }, []);
-
   // Real-time search logic
   useEffect(() => {
     if (searchQuery.length < 1) {
-      setSearchResults({ agencies: [], contents: [] });
+      setSearchResults({ agencies: [], contents: [], users: [], screens: [] });
       setShowSearchDropdown(false);
       return;
     }
@@ -63,26 +53,35 @@ export default function Header() {
       setIsSearching(true);
       setShowSearchDropdown(true);
       try {
-        const token = localStorage.getItem("token");
-        const headers = { "Authorization": `Bearer ${token}` };
-
-        const [resAgencies, resContent] = await Promise.all([
-          fetch("http://localhost:3001/agencies", { headers }),
-          fetch("http://localhost:3001/content", { headers })
+        const [resAgencies, resContent, resUsers, resScreens] = await Promise.all([
+          fetch("/api/backend/agencies", { cache: "no-store" }),
+          fetch("/api/backend/content", { cache: "no-store" }),
+          fetch("/api/backend/users", { cache: "no-store" }),
+          fetch("/api/backend/screens", { cache: "no-store" }),
         ]);
 
         const agencies = resAgencies.ok ? await resAgencies.json() : [];
         const contents = resContent.ok ? await resContent.json() : [];
+        const users = resUsers.ok ? await resUsers.json() : [];
+        const screens = resScreens.ok ? await resScreens.json() : [];
 
         const filteredAgencies = agencies.filter((a: any) => 
-          a.name?.toLowerCase().includes(searchQuery.toLowerCase())
+          `${a.name || ""} ${a.city || ""} ${a.address || ""}`.toLowerCase().includes(searchQuery.toLowerCase())
         ).slice(0, 3);
 
         const filteredContents = contents.filter((c: any) => 
-          c.title?.toLowerCase().includes(searchQuery.toLowerCase())
+          `${c.title || ""} ${c.type || ""}`.toLowerCase().includes(searchQuery.toLowerCase())
         ).slice(0, 3);
 
-        setSearchResults({ agencies: filteredAgencies, contents: filteredContents });
+        const filteredUsers = users.filter((u: any) =>
+          `${u.fullname || u.name || ""} ${u.email || ""} ${u.role || ""}`.toLowerCase().includes(searchQuery.toLowerCase())
+        ).slice(0, 3);
+
+        const filteredScreens = screens.filter((s: any) =>
+          `${s.name || ""} ${s.status || ""} ${s.ip || ""}`.toLowerCase().includes(searchQuery.toLowerCase())
+        ).slice(0, 3);
+
+        setSearchResults({ agencies: filteredAgencies, contents: filteredContents, users: filteredUsers, screens: filteredScreens });
       } catch (err) {
         console.error(err);
       } finally {
@@ -105,15 +104,14 @@ export default function Header() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.clear();
-    router.push("/login");
+    signOut({ callbackUrl: "/login" });
   };
 
   const handleSearchSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (searchQuery.trim()) {
       setShowSearchDropdown(false);
-      router.push(`/dashboard/admin/search?q=${encodeURIComponent(searchQuery)}`);
+      router.push(`/dashboard/search?q=${encodeURIComponent(searchQuery)}`);
     }
   };
   return (
@@ -131,7 +129,7 @@ export default function Header() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => searchQuery.length >= 2 && setShowSearchDropdown(true)}
-            placeholder="Rechercher une agence, un contenu..." 
+            placeholder="Rechercher agences, chefs, écrans, contenus..." 
             className="w-full bg-muted/60 border border-border text-foreground text-sm rounded-xl pl-12 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all placeholder:text-muted-foreground/40 shadow-sm"
           />
         </form>
@@ -149,7 +147,7 @@ export default function Header() {
                     <div className="h-5 w-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                     <span className="text-xs">Recherche en cours...</span>
                  </div>
-              ) : (searchResults.agencies.length === 0 && searchResults.contents.length === 0) ? (
+              ) : (searchResults.agencies.length === 0 && searchResults.contents.length === 0 && searchResults.users.length === 0 && searchResults.screens.length === 0) ? (
                 <div className="p-8 text-center text-muted-foreground text-xs">Aucun résultat pour "{searchQuery}"</div>
               ) : (
                 <>
@@ -184,6 +182,40 @@ export default function Header() {
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-foreground truncate">{item.title}</p>
                         <p className="text-[10px] text-muted-foreground uppercase">Média · {item.type}</p>
+                      </div>
+                      <ArrowRight size={14} className="text-foreground opacity-0 group-hover:opacity-100 transition-all" />
+                    </button>
+                  ))}
+
+                  {searchResults.users.map((u) => (
+                    <button
+                      key={u._id || u.id}
+                      onClick={() => { router.push('/dashboard/admin/users'); setShowSearchDropdown(false); }}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted text-left transition-colors group"
+                    >
+                      <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                        <UserCheck size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-foreground truncate">{u.fullname || u.name || u.email}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase">Chef · {u.email}</p>
+                      </div>
+                      <ArrowRight size={14} className="text-foreground opacity-0 group-hover:opacity-100 transition-all" />
+                    </button>
+                  ))}
+
+                  {searchResults.screens.map((screen) => (
+                    <button
+                      key={screen._id || screen.id}
+                      onClick={() => { router.push('/dashboard/admin/screens'); setShowSearchDropdown(false); }}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted text-left transition-colors group"
+                    >
+                      <div className="h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-500 border border-violet-500/20">
+                        <MonitorSmartphone size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-foreground truncate">{screen.name}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase">Écran · {screen.status || "N/A"}</p>
                       </div>
                       <ArrowRight size={14} className="text-foreground opacity-0 group-hover:opacity-100 transition-all" />
                     </button>
@@ -271,6 +303,15 @@ export default function Header() {
 
                 {/* Actions */}
                 <div className="p-2">
+                  <button 
+                    onClick={() => { router.push(profilePath); setIsProfileOpen(false); }}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-foreground hover:bg-muted transition-all duration-300"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <User size={18} />
+                      <span className="text-sm font-semibold">Mon profil</span>
+                    </div>
+                  </button>
                   <button 
                     onClick={handleLogout}
                     className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all duration-300 group/logout"

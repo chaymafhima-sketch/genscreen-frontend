@@ -43,12 +43,8 @@ export default function UsersPage() {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem("token");
-      
       // Fetch Users
-      const usersRes = await fetch("http://localhost:3001/users", {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
+      const usersRes = await fetch("/api/backend/users", { cache: "no-store" });
       if (!usersRes.ok) throw new Error("Erreur de récupération des utilisateurs");
       const usersData = await usersRes.json();
       // Filter for chefs only for this management page
@@ -68,17 +64,15 @@ export default function UsersPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem("token");
       const url = isEditing 
-        ? `http://localhost:3001/users/${editingUserId}` 
-        : "http://localhost:3001/users/create";
+        ? `/api/backend/users/${editingUserId}` 
+        : "/api/backend/users/create";
       const method = isEditing ? "PUT" : "POST";
 
       const res = await fetch(url, {
         method: method,
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       });
@@ -102,12 +96,10 @@ export default function UsersPage() {
 
   const toggleDiffusion = async (user: any) => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/users/${user._id || user.id}`, {
+      const res = await fetch(`/api/backend/users/${user._id || user.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({ canDiffuse: !user.canDiffuse })
       });
@@ -121,10 +113,8 @@ export default function UsersPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce chef d'agence ?")) return;
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3001/users/${id}`, {
+      const res = await fetch(`/api/backend/users/${id}`, {
         method: "DELETE",
-        headers: { "Authorization": `Bearer ${token}` }
       });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
       fetchData();
