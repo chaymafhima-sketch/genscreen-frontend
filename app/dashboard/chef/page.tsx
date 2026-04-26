@@ -70,17 +70,17 @@ export default function ChefDashboard() {
           </h1>
           <div className="flex items-center gap-2 mt-2">
             <p className="text-muted-foreground text-lg">Gérez vos écrans et diffusez vos messages en direct sur vos agences.</p>
-            {userData.city && (
+            {/* {userData.city && (
               <span className="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 animate-pulse">
                 <Globe size={12} /> Zone : {userData.city}
               </span>
-            )}
+            )} */}
           </div>
         </div>
       </div>
 
       {/* Premium Stats Grid */}
-      <Stats />
+      {/* <Stats /> */}
 
       {/* Local Content & Screens Summary */}
       <div className="grid grid-cols-1 gap-8">

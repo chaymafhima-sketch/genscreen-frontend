@@ -180,7 +180,7 @@ export default function ScreensPage() {
       if (!res.ok) throw new Error("Erreur lors de la mise à jour de la playlist");
       alert("Playlist mise à jour !");
       setIsDetailsModalOpen(false);
-      fetchScreens(true);
+      fetchScreens();
     } catch (err: any) {
       alert(err.message);
     } finally {

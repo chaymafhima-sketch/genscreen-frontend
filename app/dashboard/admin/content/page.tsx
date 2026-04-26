@@ -389,7 +389,7 @@ export default function ContentPage() {
                     <td className="px-6 py-4 text-slate-500">
                       {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Récemment"}
                     </td>
-                    <td className="px-6 py-4 text-right space-x-2">
+                    <td className="px-6 py-4 text-right space-x-2 flex items-center justify-end">
                      <button onClick={() => openAssignTvsModal(contentId)} className="p-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-lg transition-colors border border-emerald-500/20" title="Modifier TVs assignées">
                         <PlayCircle size={16} />
                      </button>

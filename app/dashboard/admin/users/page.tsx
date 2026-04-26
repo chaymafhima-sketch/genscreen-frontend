@@ -271,13 +271,13 @@ export default function UsersPage() {
 
       {/* Modal - Nouveau Chef */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
           <div 
             className="absolute inset-0 bg-background/60 backdrop-blur-md"
             onClick={() => !isSubmitting && !submitSuccess && setIsModalOpen(false)}
           />
-          <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center p-6 border-b border-border bg-muted/30">
+          <div className="relative w-full max-w-md max-h-[92vh] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+            <div className="flex justify-between items-center p-4 sm:p-6 border-b border-border bg-muted/30 shrink-0">
               <div>
                 <h2 className="text-xl font-bold text-foreground">{isEditing ? "Modifier le Chef" : "Nouveau Chef d'Agence"}</h2>
                 <p className="text-xs text-muted-foreground mt-1">{isEditing ? "Mettez à jour les informations du manager." : "Créez un compte pour un nouveau manager."}</p>
@@ -306,7 +306,7 @@ export default function UsersPage() {
                 <p className="text-sm text-muted-foreground">{isEditing ? "Les informations ont été mises à jour." : "Le chef d'agence peut maintenant se connecter."}</p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     Nom Complet
