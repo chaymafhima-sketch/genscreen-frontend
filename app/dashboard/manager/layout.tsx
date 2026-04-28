@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Sidebar, { SidebarLinkType } from "../components/Sidebar";
-import Header from "../components/Header";
+import Sidebar, { SidebarLinkType } from "./components/Sidebar";
+import Header from "./components/Header";
 import { LayoutDashboard, Building2, MonitorSmartphone, FileVideo, User } from "lucide-react";
 import { useSession } from "next-auth/react";
 
-export default function ChefLayout({ children }: { children: React.ReactNode }) {
+export default function ManagerLayout({ children }: { children: React.ReactNode }) {
   const [userData, setUserData] = React.useState<any>({});
   const { data: session } = useSession();
 
@@ -29,17 +29,17 @@ export default function ChefLayout({ children }: { children: React.ReactNode }) 
      fetchProfile();
   }, [session]);
 
-  const chefLinks: SidebarLinkType[] = [
-    { href: "/dashboard/chef", label: "Vue d'ensemble", icon: <LayoutDashboard size={20} /> },
-    { href: "/dashboard/chef/agencies", label: "Mes Agences", icon: <Building2 size={20} /> },
-    { href: "/dashboard/chef/screens", label: "Mes Écrans", icon: <MonitorSmartphone size={20} /> },
-    ...(userData.canDiffuse ? [{ href: "/dashboard/chef/content", label: "Mes Contenus", icon: <FileVideo size={20} /> }] : []),
-    // { href: "/dashboard/chef/profile", label: "Profil", icon: <User size={20} /> },
+  const managerLinks: SidebarLinkType[] = [
+    { href: "/dashboard/manager", label: "Vue d'ensemble", icon: <LayoutDashboard size={20} /> },
+    { href: "/dashboard/manager/etablissement", label: "Mes Établissements", icon: <Building2 size={20} /> },
+    { href: "/dashboard/manager/screens", label: "Mes Écrans", icon: <MonitorSmartphone size={20} /> },
+    ...(userData.canDiffuse ? [{ href: "/dashboard/manager/content", label: "Mes Contenus", icon: <FileVideo size={20} /> }] : []),
+    // { href: "/dashboard/manager/profile", label: "Profil", icon: <User size={20} /> },
   ];
 
   return (
     <div className="flex min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 transition-colors duration-300">
-      <Sidebar links={chefLinks} role="Chef d'Agence" />
+      <Sidebar links={managerLinks} role="Manager" />
       <div className="flex-1 ml-72 relative flex flex-col min-h-screen">
         <Header />
         <main className="p-8 flex-1 overflow-x-hidden">

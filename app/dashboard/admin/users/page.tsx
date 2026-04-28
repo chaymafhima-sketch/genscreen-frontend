@@ -30,7 +30,7 @@ export default function UsersPage() {
     fullname: '', 
     email: '', 
     password: '', 
-    role: 'chef', 
+    role: 'manager', 
     canDiffuse: false,
     address: '',
     city: ''
@@ -48,7 +48,7 @@ export default function UsersPage() {
       if (!usersRes.ok) throw new Error("Erreur de récupération des utilisateurs");
       const usersData = await usersRes.json();
       // Filter for chefs only for this management page
-      setUsers(usersData.filter((u: any) => u.role === 'chef'));
+      setUsers(usersData.filter((u: any) => u.role === 'manager'));
     } catch (err: any) {
       setError(err.message || "Erreur de connexion serveur");
     } finally {
@@ -85,7 +85,7 @@ export default function UsersPage() {
         setIsModalOpen(false);
         setSubmitSuccess(false);
         setIsEditing(false);
-        setFormData({ fullname: '', email: '', password: '', role: 'chef', canDiffuse: false, address: '', city: '' });
+        setFormData({ fullname: '', email: '', password: '', role: 'manager', canDiffuse: false, address: '', city: '' });
       }, 1500);
     } catch (err: any) {
       alert(err.message);
@@ -111,7 +111,7 @@ export default function UsersPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce chef d'agence ?")) return;
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce manager ?")) return;
     try {
       const res = await fetch(`/api/backend/users/${id}`, {
         method: "DELETE",
@@ -132,7 +132,7 @@ export default function UsersPage() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">Gestion des Chefs d'Agence</h1>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">Gestion des Managers</h1>
           <p className="text-muted-foreground mt-2">Inscrivez de nouveaux managers et gérez leurs permissions de diffusion.</p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
@@ -147,7 +147,7 @@ export default function UsersPage() {
             onClick={() => setIsModalOpen(true)}
             className="bg-primary hover:opacity-90 text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
           >
-            <UserPlus size={18} /> Nouveau Chef
+            <UserPlus size={18} /> Nouveau Manager
           </button>
         </div>
       </div>
@@ -158,13 +158,13 @@ export default function UsersPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
             <input 
               type="text" 
-              placeholder="Rechercher un chef d'agence..." 
+              placeholder="Rechercher un manager..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-background border border-border rounded-xl py-2 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/60"
             />
           </div>
-          <span className="text-sm font-medium text-muted-foreground">{filteredUsers.length} chefs au total</span>
+          <span className="text-sm font-medium text-muted-foreground">{filteredUsers.length} managers au total</span>
         </div>
 
         <div className="flex-1 p-0">
@@ -181,7 +181,7 @@ export default function UsersPage() {
           ) : filteredUsers.length === 0 ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-muted-foreground">
               <UserCheck size={48} className="mb-4 opacity-50" />
-              <p>{searchQuery ? "Aucun chef ne correspond à votre recherche." : "Aucun chef d'agence trouvé."}</p>
+              <p>{searchQuery ? "Aucun manager ne correspond à votre recherche." : "Aucun manager trouvé."}</p>
             </div>
           ) : (
             <table className="w-full text-left text-sm text-muted-foreground">
@@ -241,7 +241,7 @@ export default function UsersPage() {
                                 fullname: user.fullname || user.name || '',
                                 email: user.email || '',
                                 password: '', // Pass empty if not changing
-                                role: user.role || 'chef',
+                                role: user.role || 'manager',
                                 canDiffuse: user.canDiffuse || false,
                                 address: user.address || '',
                                 city: user.city || ''
@@ -279,7 +279,7 @@ export default function UsersPage() {
           <div className="relative w-full max-w-md max-h-[92vh] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
             <div className="flex justify-between items-center p-4 sm:p-6 border-b border-border bg-muted/30 shrink-0">
               <div>
-                <h2 className="text-xl font-bold text-foreground">{isEditing ? "Modifier le Chef" : "Nouveau Chef d'Agence"}</h2>
+                <h2 className="text-xl font-bold text-foreground">{isEditing ? "Modifier le Manager" : "Nouveau Manager"}</h2>
                 <p className="text-xs text-muted-foreground mt-1">{isEditing ? "Mettez à jour les informations du manager." : "Créez un compte pour un nouveau manager."}</p>
               </div>
               <button 
@@ -288,7 +288,7 @@ export default function UsersPage() {
                     setIsModalOpen(false);
                     setIsEditing(false);
                     setEditingUserId(null);
-                    setFormData({ fullname: '', email: '', password: '', role: 'chef', canDiffuse: false, address: '', city: '' });
+                    setFormData({ fullname: '', email: '', password: '', role: 'manager', canDiffuse: false, address: '', city: '' });
                   }
                 }}
                 className="text-muted-foreground hover:text-foreground transition-colors"
@@ -303,7 +303,7 @@ export default function UsersPage() {
                   <UserCheck size={32} />
                 </div>
                 <h3 className="text-lg font-medium text-foreground mb-2">{isEditing ? "Modifié avec succès !" : "Compte créé avec succès !"}</h3>
-                <p className="text-sm text-muted-foreground">{isEditing ? "Les informations ont été mises à jour." : "Le chef d'agence peut maintenant se connecter."}</p>
+                <p className="text-sm text-muted-foreground">{isEditing ? "Les informations ont été mises à jour." : "Le manager peut maintenant se connecter."}</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto">
@@ -391,7 +391,7 @@ export default function UsersPage() {
                       </div>
                       <div>
                         <p className="text-sm font-bold text-foreground tracking-tight">Autorisation de diffusion</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Permettre au chef de diffuser du contenu</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Permettre au manager de diffuser du contenu</p>
                       </div>
                     </div>
                     <button

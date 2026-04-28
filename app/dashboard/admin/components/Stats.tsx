@@ -7,32 +7,33 @@ import {
   FileVideo, 
   TrendingUp, 
   MonitorSmartphone,
-  ArrowUpRight
+  ArrowUpRight,
+  TrendingDown
 } from "lucide-react";
 
 export default function Stats() {
-  const [data, setData] = useState({ contents: 0, agencies: 0, users: 0, screens: 0 });
+  const [data, setData] = useState({ contents: 0, etablissements: 0, users: 0, screens: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [resContent, resAgencies, resUsers, resScreens] = await Promise.all([
+        const [resContent, resetablissements, resUsers, resScreens] = await Promise.all([
           fetch("/api/backend/content", { cache: "no-store" }),
-          fetch("/api/backend/agencies", { cache: "no-store" }),
+          fetch("/api/backend/etablissements", { cache: "no-store" }),
           fetch("/api/backend/users", { cache: "no-store" }),
           fetch("/api/backend/screens", { cache: "no-store" }),
         ]);
 
         const contents = resContent.ok ? await resContent.json() : [];
-        const agencies = resAgencies.ok ? await resAgencies.json() : [];
+        const etablissements = resetablissements.ok ? await resetablissements.json() : [];
         const users = resUsers.ok ? await resUsers.json() : [];
         const screens = resScreens.ok ? await resScreens.json() : [];
 
         setData({
           contents: contents.length,
-          agencies: agencies.length,
-          users: users.filter((u: any) => u.role === "chef").length,
+          etablissements: etablissements.length,
+          users: users.filter((u: any) => u.role === "manager").length,
           screens: screens.length,
         });
 
@@ -48,8 +49,8 @@ export default function Stats() {
 
   const stats = [
     {
-      title: "Agences Partenaires",
-      value: loading ? "..." : data.agencies.toString(),
+      title: "Établissements Partenaires",
+      value: loading ? "..." : data.etablissements.toString(),
       trend: "Réseau",
       trendUp: true,
       icon: <Building2 size={20} />,
@@ -59,7 +60,7 @@ export default function Stats() {
       glow: "shadow-indigo-500/10",
     },
     {
-      title: "Chefs d'Agence",
+      title: "Managers",
       value: loading ? "..." : data.users.toString(),
       trend: "Utilisateurs",
       trendUp: true,

@@ -20,7 +20,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (status === "authenticated") {
       const role = (session?.user as { role?: string } | undefined)?.role;
-      const target = role === "admin" ? "/dashboard/admin" : "/dashboard/chef";
+      const target = role === "admin" ? "/dashboard/admin" : "/dashboard/manager";
       router.replace(target);
     }
   }, [status, session, router]);
@@ -44,7 +44,7 @@ export default function LoginPage() {
         const sessionRes = await fetch("/api/auth/session", { cache: "no-store" });
         const session = sessionRes.ok ? await sessionRes.json() : null;
         const role = session?.user?.role;
-        const target = role === "admin" ? "/dashboard/admin" : "/dashboard/chef";
+        const target = role === "admin" ? "/dashboard/admin" : "/dashboard/manager";
         setTimeout(() => {
           router.replace(target);
           // Fallback hard redirect in case client navigation is interrupted.

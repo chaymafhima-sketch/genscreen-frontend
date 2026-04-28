@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { Plus, X, Loader2, AlertCircle, Building2, MapPin, Phone, Building, Edit2, Trash2, Search, Globe, RefreshCcw, Users } from "lucide-react";
 import { TUNISIA_CITIES } from "@/app/lib/constants/tunisia-cities";
 
-export default function AgenciesPage() {
-  const [agencies, setAgencies] = useState<any[]>([]);
+export default function EtablissementsPage() {
+  const [etablissements, setEtablissements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,18 +27,18 @@ export default function AgenciesPage() {
       const data = await res.json();
       setUsers(data || []);
     } catch (err: any) {
-      // Keep agencies screen usable even if users fetch fails
+      // Keep etablissement screen usable even if users fetch fails
       console.error(err?.message || err);
       setUsers([]);
     }
   };
 
-  const fetchAgencies = async () => {
+  const fetchetablissements = async () => {
     try {
-      const res = await fetch("/api/backend/agencies", { cache: "no-store" });
-      if (!res.ok) throw new Error("Erreur de récupération des agences");
+      const res = await fetch("/api/backend/etablissements", { cache: "no-store" });
+      if (!res.ok) throw new Error("Erreur de récupération des établissements");
       const data = await res.json();
-      setAgencies(data);
+      setEtablissements(data);
     } catch (err: any) {
       setError(err.message || "Erreur de connexion serveur");
     } finally {
@@ -47,20 +47,20 @@ export default function AgenciesPage() {
   };
 
   useEffect(() => {
-    fetchAgencies();
+    fetchetablissements();
     fetchUsers();
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette agence ?")) return;
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce établissement ?")) return;
     try {
-      const res = await fetch(`/api/backend/agencies/${id}`, {
+      const res = await fetch(`/api/backend/etablissements/${id}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
-      fetchAgencies();
+      fetchetablissements();
     } catch (err: any) {
-      alert(err.message || "Impossible de supprimer cette agence");
+      alert(err.message || "Impossible de supprimer ce établissement");
     }
   };
 
@@ -104,7 +104,7 @@ export default function AgenciesPage() {
       if (editingId) {
         // If users changed, assign/replace via dedicated endpoint (admin only)
         if (!arraysEqual(userIds, initialUserIds)) {
-          const assignRes = await fetch(`/api/backend/agencies/${editingId}/assign-users`, {
+          const assignRes = await fetch(`/api/backend/etablissements/${editingId}/assign-users`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -115,7 +115,7 @@ export default function AgenciesPage() {
           setInitialUserIds(userIds);
         }
 
-        res = await fetch(`/api/backend/agencies/${editingId}`, {
+        res = await fetch(`/api/backend/etablissements/${editingId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -124,7 +124,7 @@ export default function AgenciesPage() {
         });
       } else {
         if (!userIds.length) throw new Error("Veuillez sélectionner au moins un utilisateur");
-        res = await fetch("/api/backend/agencies", {
+        res = await fetch("/api/backend/etablissements", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -135,7 +135,7 @@ export default function AgenciesPage() {
       
       if (!res.ok) throw new Error("Erreur lors de l'enregistrement");
       setSubmitSuccess(true);
-      fetchAgencies();
+      fetchetablissements();
       setTimeout(() => {
         setIsModalOpen(false);
         setSubmitSuccess(false);
@@ -158,7 +158,7 @@ export default function AgenciesPage() {
     return label.includes(q);
   });
 
-  const filteredAgencies = agencies.filter(agency => 
+  const filteredetablissements = etablissements.filter(agency => 
     (agency.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
     (agency.address || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
     (agency.city || "").toLowerCase().includes(searchQuery.toLowerCase())
@@ -168,12 +168,12 @@ export default function AgenciesPage() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">Agences</h1>
-          <p className="text-muted-foreground mt-2">Gérez vos différentes agences et leurs configurations globales.</p>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">Établissements</h1>
+          <p className="text-muted-foreground mt-2">Gérez vos différents établissements et leurs configurations globales.</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
-            onClick={fetchAgencies}
+            onClick={fetchetablissements}
             className="p-2.5 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all active:rotate-180 duration-500"
             title="Rafraîchir"
           >
@@ -183,7 +183,7 @@ export default function AgenciesPage() {
             onClick={openAddModal}
             className="bg-primary hover:opacity-90 text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
           >
-            <Plus size={18} /> Nouvelle Agence
+            <Plus size={18} /> Nouvel Établissement
           </button>
         </div>
       </div>
@@ -194,30 +194,30 @@ export default function AgenciesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
             <input 
               type="text" 
-              placeholder="Rechercher une agence..." 
+              placeholder="Rechercher un établissement..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-background border border-border rounded-xl py-2 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/60"
             />
           </div>
-          <span className="text-sm font-medium text-muted-foreground">{filteredAgencies.length} agences au total</span>
+          <span className="text-sm font-medium text-muted-foreground">{filteredetablissements.length} établissements au total</span>
         </div>
 
         <div className="flex-1 p-0">
           {loading ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-muted-foreground">
               <Loader2 className="animate-spin text-primary mb-4" size={32} />
-              <p>Chargement des agences...</p>
+              <p>Chargement des établissements...</p>
             </div>
           ) : error ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-destructive">
               <AlertCircle size={32} className="mb-4" />
               <p>{error}</p>
             </div>
-          ) : filteredAgencies.length === 0 ? (
+          ) : filteredetablissements.length === 0 ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-muted-foreground">
               <Building size={48} className="mb-4 opacity-50" />
-              <p>{searchQuery ? "Aucune agence ne correspond à votre recherche." : "Aucune agence trouvée."}</p>
+              <p>{searchQuery ? "Aucun établissement ne correspond à votre recherche." : "Aucun établissement trouvé."}</p>
             </div>
           ) : (
             <table className="w-full text-left text-sm text-muted-foreground">
@@ -232,7 +232,7 @@ export default function AgenciesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40 transition-colors">
-                {filteredAgencies.map((agency: any) => {
+                {filteredetablissements.map((agency: any) => {
                   const agencyUserIds: string[] =
                     agency?.userIds ||
                     agency?.users?.map((u: any) => u?._id || u?.id).filter(Boolean) ||
@@ -295,7 +295,7 @@ export default function AgenciesPage() {
         </div>
       </div>
 
-      {/* Modal - Nouvelle/Modifier Agence */}
+      {/* Modal - Nouvelle/Modifier �tablissement */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
           <div 
@@ -305,7 +305,7 @@ export default function AgenciesPage() {
           <div className="relative w-full max-w-md max-h-[92vh] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
             <div className="flex justify-between items-center p-4 sm:p-6 border-b border-border bg-muted/30 shrink-0">
               <div>
-                <h2 className="text-xl font-bold text-foreground">{editingId ? "Modifier l'Agence" : "Nouvelle Agence"}</h2>
+                <h2 className="text-xl font-bold text-foreground">{editingId ? "Modifier l'Établissement" : "Nouvel Établissement"}</h2>
                 <p className="text-xs text-muted-foreground mt-1">{editingId ? "Modifiez les informations." : "Ajoutez un nouvel établissement à votre réseau."}</p>
               </div>
               <button 
@@ -321,22 +321,26 @@ export default function AgenciesPage() {
                 <div className="h-16 w-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-4 border border-emerald-500/20">
                   <Building2 size={32} />
                 </div>
-                <h3 className="text-lg font-medium text-foreground mb-2">Agence créée avec succès !</h3>
-                <p className="text-sm text-muted-foreground">L'agence a été ajoutée à la base de données.</p>
+                <h3 className="text-lg font-medium text-foreground mb-2">
+                  {editingId ? "Établissement modifié avec succès !" : "Établissement créé avec succès !"}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {editingId ? "Les modifications ont été enregistrées." : "L'établissement a été ajouté à la base de données."}
+                </p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Building2 size={16} className="text-primary" />
-                    Nom de l'agence
+                    Nom de l'établissement
                   </label>
                   <input
                     required
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="Ex: Agence Paris Centrale"
+                    placeholder="Ex: Établissement Paris Centrale"
                     className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/40"
                   />
                 </div>

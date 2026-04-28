@@ -26,11 +26,11 @@ export async function middleware(req: NextRequest) {
     // Simple role-based guards
     if (pathname.startsWith("/dashboard/admin") && user?.role !== "admin") {
       const url = req.nextUrl.clone();
-      url.pathname = "/dashboard/chef";
+      url.pathname = "/dashboard/manager";
       return NextResponse.redirect(url);
     }
 
-    if (pathname.startsWith("/dashboard/chef") && user?.role === "admin") {
+    if (pathname.startsWith("/dashboard/manager") && user?.role === "admin") {
       const url = req.nextUrl.clone();
       url.pathname = "/dashboard/admin";
       return NextResponse.redirect(url);

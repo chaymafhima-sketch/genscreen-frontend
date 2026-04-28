@@ -23,10 +23,10 @@ import {
 
 export default function ChefContentPage() {
   const [screens, setScreens] = useState<any[]>([]);
-  const [myAgencies, setMyAgencies] = useState<any[]>([]);
+  const [myetablissements, setMyetablissements] = useState<any[]>([]);
   const [contents, setContents] = useState<any[]>([]);
   const [selectedScreens, setSelectedScreens] = useState<string[]>([]);
-  const [selectedAgencyIds, setSelectedAgencyIds] = useState<string[]>([]);
+  const [selectedetablissementIds, setSelectedetablissementIds] = useState<string[]>([]);
   const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
   const [duration, setDuration] = useState<number | "">("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,21 +54,21 @@ export default function ChefContentPage() {
       if (!user) return;
       setUserData(user);
 
-      // Fetch Agencies to filter screens
-      const agenciesRes = await fetch("/api/backend/agencies", { cache: "no-store" });
-      let myAgencyIds = new Set<string>();
-      if (agenciesRes.ok) {
-        // Backend should already return only agencies assigned to current chef
-        const filteredAgencies = await agenciesRes.json();
-        setMyAgencies(filteredAgencies);
-        myAgencyIds = new Set(filteredAgencies.map((a: { _id: any; id: any }) => a._id || a.id));
+      // Fetch etablissements to filter screens
+      const etablissementsRes = await fetch("/api/backend/etablissements", { cache: "no-store" });
+      let myetablissementIds = new Set<string>();
+      if (etablissementsRes.ok) {
+        // Backend should already return only etablissements assigned to current chef
+        const filteredetablissements = await etablissementsRes.json();
+        setMyetablissements(filteredetablissements);
+        myetablissementIds = new Set(filteredetablissements.map((a: { _id: any; id: any }) => a._id || a.id));
       }
 
       // Fetch Screens
       const screensRes = await fetch("/api/backend/screens", { cache: "no-store" });
       if (screensRes.ok) {
         const allScreens = await screensRes.json();
-        const filteredScreens = allScreens.filter((s: any) => myAgencyIds.has(s.agencyId));
+        const filteredScreens = allScreens.filter((s: any) => myetablissementIds.has(s.etablissementId));
         setScreens(filteredScreens);
       }
     } catch (err) {
@@ -149,7 +149,7 @@ export default function ChefContentPage() {
         body: JSON.stringify({
           type: "info",
           action: "Modification contenu",
-          source: "Chef d'Agence",
+          source: "Manager",
           user: user.name || user.email || "Chef",
           details: `Modification du contenu "${editFormData.title}"`
         })
@@ -172,12 +172,12 @@ export default function ChefContentPage() {
   };
 
   const handleToggleAgency = (id: string) => {
-    setSelectedAgencyIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setSelectedetablissementIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
   const handleDiffusion = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedScreens.length === 0 && selectedAgencyIds.length === 0) {
+    if (selectedScreens.length === 0 && selectedetablissementIds.length === 0) {
       alert("Veuillez sélectionner au moins un écran.");
       return;
     }
@@ -191,7 +191,7 @@ export default function ChefContentPage() {
       const user = userData || {};
       const content = contents.find(c => (c._id || c.id) === selectedContentId);
       const agencyScreenIds = screens
-        .filter((s: any) => selectedAgencyIds.includes(s.agencyId))
+        .filter((s: any) => selectedetablissementIds.includes(s.etablissementId))
         .map((s: any) => s._id || s.id)
         .filter(Boolean);
       const targetScreenIds = Array.from(new Set([...selectedScreens, ...agencyScreenIds]));
@@ -220,7 +220,7 @@ export default function ChefContentPage() {
         body: JSON.stringify({
           type: "success",
           action: "Diffusion de contenu",
-          source: "Chef d'Agence",
+          source: "Manager",
           user: user.name || user.email || "Chef",
           details: `Assignation de "${content?.title}" sur ${targetScreenIds.length} écran(s) pour une durée de ${duration}s.`
         })
@@ -230,7 +230,7 @@ export default function ChefContentPage() {
       setTimeout(() => {
         setSuccess(false);
         setSelectedScreens([]);
-        setSelectedAgencyIds([]);
+        setSelectedetablissementIds([]);
         setSelectedContentId(null);
         setDuration("");
       }, 3000);

@@ -19,11 +19,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export default function ChefDashboard() {
+export default function ManagerDashboard() {
   const [userData, setUserData] = useState<{name?: string, fullname?: string, role?: string, canDiffuse?: boolean, address?: string, city?: string}>({});
   const [loading, setLoading] = useState(true);
-  const [agencies, setAgencies] = useState<any[]>([]);
-  const [loadingAgencies, setLoadingAgencies] = useState(true);
+  const [etablissements, setEtablissements] = useState<any[]>([]);
+  const [loadingetablissements, setLoadingetablissements] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,18 +41,18 @@ export default function ChefDashboard() {
       }
       setLoading(false);
 
-      // Fetch Agencies
+      // Fetch etablissements
       try {
-        const res = await fetch("/api/backend/agencies", { cache: "no-store" });
+        const res = await fetch("/api/backend/etablissements", { cache: "no-store" });
         if (res.ok) {
-          // Backend should already return only agencies assigned to current chef
-          const assignedAgencies = await res.json();
-          setAgencies(assignedAgencies || []);
+          // Backend should already return only etablissements assigned to current chef
+          const assignedetablissements = await res.json();
+          setEtablissements(assignedetablissements || []);
         }
       } catch (e) {
-        console.error("Erreur fetch agencies", e);
+        console.error("Erreur fetch etablissements", e);
       } finally {
-        setLoadingAgencies(false);
+        setLoadingetablissements(false);
       }
     };
 
@@ -69,7 +69,7 @@ export default function ChefDashboard() {
              Salut, {userData.fullname || userData.name || "Manager"} !
           </h1>
           <div className="flex items-center gap-2 mt-2">
-            <p className="text-muted-foreground text-lg">Gérez vos écrans et diffusez vos messages en direct sur vos agences.</p>
+            <p className="text-muted-foreground text-lg">Gérez vos écrans et diffusez vos messages en direct sur vos établissements.</p>
             {/* {userData.city && (
               <span className="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 animate-pulse">
                 <Globe size={12} /> Zone : {userData.city}
@@ -89,21 +89,21 @@ export default function ChefDashboard() {
           <div className="flex justify-between items-center mb-8">
             <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
               <MonitorSmartphone size={22} className="text-indigo-500" />
-              Mes Agences ({agencies.length})
+              Mes Établissements ({etablissements.length})
             </h3>
-            <Link href="/dashboard/chef/screens" className="text-xs font-bold text-primary hover:opacity-80 uppercase tracking-widest flex items-center gap-1 group">
+            <Link href="/dashboard/manager/screens" className="text-xs font-bold text-primary hover:opacity-80 uppercase tracking-widest flex items-center gap-1 group">
               Écrans <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
           
           <div className="space-y-4">
-             {loadingAgencies ? (
+             {loadingetablissements ? (
                <div className="flex flex-col items-center py-10 text-muted-foreground animate-pulse">
                  <Loader2 className="animate-spin mb-2" size={24} />
-                 <p className="text-xs">Recherche de vos agences...</p>
+                 <p className="text-xs">Recherche de vos établissements...</p>
                </div>
-             ) : agencies.length > 0 ? (
-               agencies.map((agency, i) => (
+             ) : etablissements.length > 0 ? (
+               etablissements.map((agency, i) => (
                  <div key={agency._id || i} className="bg-muted/30 border border-border/40 p-4 rounded-2xl flex items-center justify-between transition-all hover:border-primary/30 group">
                     <div className="flex items-center gap-4">
                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
@@ -123,8 +123,8 @@ export default function ChefDashboard() {
                  <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
                    <AlertCircle size={24} className="text-muted-foreground" />
                  </div>
-                 <p className="text-sm font-bold text-foreground">Aucune agence assignée</p>
-                 <p className="text-xs text-muted-foreground mt-1">Vos agences s'afficheront ici en fonction de votre ville : <span className="font-bold text-primary">{userData.city || "Non définie"}</span></p>
+                 <p className="text-sm font-bold text-foreground">Aucune �tablissement assignée</p>
+                 <p className="text-xs text-muted-foreground mt-1">Vos �tablissements s'afficheront ici en fonction de votre ville : <span className="font-bold text-primary">{userData.city || "Non définie"}</span></p>
                </div>
              )}
           </div>

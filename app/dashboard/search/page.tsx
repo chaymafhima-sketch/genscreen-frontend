@@ -8,8 +8,8 @@ import Link from "next/link";
 function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
-  const [results, setResults] = useState<{ agencies: any[]; contents: any[]; users: any[]; screens: any[] }>({
-    agencies: [],
+  const [results, setResults] = useState<{ etablissements: any[]; contents: any[]; users: any[]; screens: any[] }>({
+    etablissements: [],
     contents: [],
     users: [],
     screens: [],
@@ -22,21 +22,21 @@ function SearchContent() {
     const run = async () => {
       setLoading(true);
       try {
-        const [resAgencies, resContent, resUsers, resScreens] = await Promise.all([
-          fetch("/api/backend/agencies", { cache: "no-store" }),
+        const [resetablissements, resContent, resUsers, resScreens] = await Promise.all([
+          fetch("/api/backend/etablissements", { cache: "no-store" }),
           fetch("/api/backend/content", { cache: "no-store" }),
           fetch("/api/backend/users", { cache: "no-store" }),
           fetch("/api/backend/screens", { cache: "no-store" }),
         ]);
 
-        const agencies = resAgencies.ok ? await resAgencies.json() : [];
+        const etablissements = resetablissements.ok ? await resetablissements.json() : [];
         const contents = resContent.ok ? await resContent.json() : [];
         const users = resUsers.ok ? await resUsers.json() : [];
         const screens = resScreens.ok ? await resScreens.json() : [];
 
         const q = query.toLowerCase();
         setResults({
-          agencies: agencies.filter((a: any) => `${a.name || ""} ${a.city || ""} ${a.address || ""}`.toLowerCase().includes(q)),
+          etablissements: etablissements.filter((a: any) => `${a.name || ""} ${a.city || ""} ${a.address || ""}`.toLowerCase().includes(q)),
           contents: contents.filter((c: any) => `${c.title || ""} ${c.type || ""}`.toLowerCase().includes(q)),
           users: users.filter((u: any) => `${u.fullname || u.name || ""} ${u.email || ""} ${u.role || ""}`.toLowerCase().includes(q)),
           screens: screens.filter((s: any) => `${s.name || ""} ${s.status || ""} ${s.ip || ""}`.toLowerCase().includes(q)),
@@ -51,7 +51,7 @@ function SearchContent() {
     run();
   }, [query]);
 
-  const total = results.agencies.length + results.contents.length + results.users.length + results.screens.length;
+  const total = results.etablissements.length + results.contents.length + results.users.length + results.screens.length;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -73,13 +73,13 @@ function SearchContent() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <section className="soft-card p-5">
-            <h2 className="text-base font-bold text-foreground flex items-center gap-2 mb-4"><Building2 size={18} className="text-primary" /> Agences ({results.agencies.length})</h2>
+            <h2 className="text-base font-bold text-foreground flex items-center gap-2 mb-4"><Building2 size={18} className="text-primary" /> �tablissements ({results.etablissements.length})</h2>
             <div className="space-y-2">
-              {results.agencies.length ? results.agencies.map((a) => (
-                <Link key={a._id || a.id} href="/dashboard/admin/agencies" className="block p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors">
+              {results.etablissements.length ? results.etablissements.map((a) => (
+                <Link key={a._id || a.id} href="/dashboard/admin/etablissements" className="block p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors">
                   <div className="flex items-center justify-between"><p className="text-sm font-medium text-foreground">{a.name}</p><ArrowRight size={14} className="text-muted-foreground" /></div>
                 </Link>
-              )) : <p className="text-xs text-muted-foreground">Aucune agence trouvée.</p>}
+              )) : <p className="text-xs text-muted-foreground">Aucune �tablissement trouvée.</p>}
             </div>
           </section>
 
@@ -95,7 +95,7 @@ function SearchContent() {
           </section>
 
           <section className="soft-card p-5">
-            <h2 className="text-base font-bold text-foreground flex items-center gap-2 mb-4"><UserCheck size={18} className="text-amber-500" /> Chefs d'agence ({results.users.length})</h2>
+            <h2 className="text-base font-bold text-foreground flex items-center gap-2 mb-4"><UserCheck size={18} className="text-amber-500" /> Managers ({results.users.length})</h2>
             <div className="space-y-2">
               {results.users.length ? results.users.map((u) => (
                 <Link key={u._id || u.id} href="/dashboard/admin/users" className="block p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors">

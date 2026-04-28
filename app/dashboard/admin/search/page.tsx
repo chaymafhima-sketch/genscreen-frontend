@@ -8,7 +8,7 @@ import Link from "next/link";
 function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
-  const [results, setResults] = useState<{ agencies: any[], contents: any[] }>({ agencies: [], contents: [] });
+  const [results, setResults] = useState<{ etablissements: any[], contents: any[] }>({ etablissements: [], contents: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,16 +17,16 @@ function SearchContent() {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const [resAgencies, resContent] = await Promise.all([
-          fetch("/api/backend/agencies", { cache: "no-store" }),
+        const [resetablissements, resContent] = await Promise.all([
+          fetch("/api/backend/etablissements", { cache: "no-store" }),
           fetch("/api/backend/content", { cache: "no-store" })
         ]);
 
-        const agencies = resAgencies.ok ? await resAgencies.json() : [];
+        const etablissements = resetablissements.ok ? await resetablissements.json() : [];
         const content = resContent.ok ? await resContent.json() : [];
 
         // Filter locally
-        const filteredAgencies = agencies.filter((a: any) => 
+        const filteredetablissements = etablissements.filter((a: any) => 
           a.name?.toLowerCase().includes(query.toLowerCase()) || 
           a.location?.toLowerCase().includes(query.toLowerCase())
         );
@@ -36,7 +36,7 @@ function SearchContent() {
           c.type?.toLowerCase().includes(query.toLowerCase())
         );
 
-        setResults({ agencies: filteredAgencies, contents: filteredContent });
+        setResults({ etablissements: filteredetablissements, contents: filteredContent });
       } catch (err) {
         console.error("Erreur recherche", err);
       } finally {
@@ -56,7 +56,7 @@ function SearchContent() {
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">Résultats pour "{query}"</h1>
           <p className="text-slate-400 mt-1">
-            {results.agencies.length + results.contents.length} correspondances trouvées.
+            {results.etablissements.length + results.contents.length} correspondances trouvées.
           </p>
         </div>
       </div>
@@ -68,15 +68,15 @@ function SearchContent() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Agencies Results */}
+          {/* etablissements Results */}
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-white flex items-center gap-2">
               <Building2 size={20} className="text-indigo-400" />
-              Agences ({results.agencies.length})
+              �tablissements ({results.etablissements.length})
             </h2>
             <div className="space-y-3">
-              {results.agencies.length > 0 ? results.agencies.map((agency) => (
-                <Link key={agency._id || agency.id} href="/dashboard/admin/agencies">
+              {results.etablissements.length > 0 ? results.etablissements.map((agency) => (
+                <Link key={agency._id || agency.id} href="/dashboard/admin/etablissements">
                   <div className="group bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 p-4 rounded-xl hover:border-blue-500/50 transition-all flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="h-10 w-10 rounded-lg bg-slate-950 flex items-center justify-center text-slate-400">
@@ -92,7 +92,7 @@ function SearchContent() {
                 </Link>
               )) : (
                 <div className="p-8 bg-slate-900/20 rounded-xl border border-dashed border-slate-800 text-center text-slate-500 text-sm">
-                  Aucune agence trouvée
+                  Aucune �tablissement trouvée
                 </div>
               )}
             </div>

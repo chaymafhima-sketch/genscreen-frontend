@@ -28,13 +28,13 @@ export default function ChefScreensPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [userData, setUserData] = useState<any>(null);
-  const [myAgencies, setMyAgencies] = useState<any[]>([]);
+  const [myetablissements, setMyetablissements] = useState<any[]>([]);
   const [contents, setContents] = useState<any[]>([]);
   
   // Modal & Form state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', agencyId: '', location: '' });
+  const [formData, setFormData] = useState({ name: '', etablissementId: '', location: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [isContentModalOpen, setIsContentModalOpen] = useState(false);
@@ -52,19 +52,19 @@ export default function ChefScreensPage() {
       if (!user) return;
       setUserData(user);
 
-      const agenciesRes = await fetch("/api/backend/agencies", { cache: "no-store" });
+      const etablissementsRes = await fetch("/api/backend/etablissements", { cache: "no-store" });
 
-        if (agenciesRes.ok) {
-          // Backend should already return only agencies assigned to current chef
-          const filteredAgencies = await agenciesRes.json();
-          setMyAgencies(filteredAgencies);
+        if (etablissementsRes.ok) {
+          // Backend should already return only etablissements assigned to current chef
+          const filteredetablissements = await etablissementsRes.json();
+          setMyetablissements(filteredetablissements);
           
           // Continue with screens fetch...
           const screensRes = await fetch("/api/backend/screens", { cache: "no-store" });
           if (screensRes.ok) {
              const allScreens = await screensRes.json();
-             const agencyIds = new Set(filteredAgencies.map((a: { _id: any; id: any }) => a._id || a.id));
-             const filteredScreens = allScreens.filter((s: any) => agencyIds.has(s.agencyId));
+             const etablissementIds = new Set(filteredetablissements.map((a: { _id: any; id: any }) => a._id || a.id));
+             const filteredScreens = allScreens.filter((s: any) => etablissementIds.has(s.etablissementId));
              setScreens(filteredScreens);
           }
         }
@@ -101,7 +101,7 @@ export default function ChefScreensPage() {
         body: JSON.stringify({
           type: "warning",
           action: "Suppression écran",
-          source: "Chef d'Agence",
+          source: "Manager",
           user: user.name || user.email || "Chef",
           details: `Suppression définitive d'un écran.`
         })
@@ -115,10 +115,10 @@ export default function ChefScreensPage() {
 
   const openEditModal = (screen: any) => {
     setEditingId(screen._id || screen.id);
-    const agencyId = screen.agencyId || (screen.agency?._id || screen.agency?.id) || '';
+    const etablissementId = screen.etablissementId || (screen.agency?._id || screen.agency?.id) || '';
     setFormData({ 
       name: screen.name || '', 
-      agencyId: String(agencyId), 
+      etablissementId: String(etablissementId), 
       location: screen.location || '' 
     });
     setIsModalOpen(true);
@@ -238,7 +238,7 @@ export default function ChefScreensPage() {
         body: JSON.stringify({
           type: "info",
           action: "Modification écran",
-          source: "Chef d'Agence",
+          source: "Manager",
           user: user.name || user.email || "Chef",
           details: `Mise à jour des infos de l'écran "${formData.name}"`
         })
@@ -353,7 +353,7 @@ export default function ChefScreensPage() {
                         <Globe size={11} className="text-primary/70" /> {screen.agency?.city || "Ville"}
                       </p>
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <Building2 size={12} className="text-primary/60" /> {screen.agency?.name || "Agence locale"}
+                        <Building2 size={12} className="text-primary/60" /> {screen.agency?.name || "�tablissement locale"}
                       </p>
                     </div>
                   </div>
@@ -438,13 +438,13 @@ export default function ChefScreensPage() {
                     </div>
 
                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Agence (Lecture seule)</label>
+                      <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">�tablissement (Lecture seule)</label>
                       <select 
                          disabled
-                         value={formData.agencyId}
+                         value={formData.etablissementId}
                          className="w-full bg-muted/50 border border-border rounded-xl p-3 text-sm text-muted-foreground cursor-not-allowed opacity-70"
                       >
-                         {myAgencies.map((agency) => (
+                         {myetablissements.map((agency) => (
                            <option key={agency._id || agency.id} value={agency._id || agency.id}>
                              {agency.name}
                            </option>

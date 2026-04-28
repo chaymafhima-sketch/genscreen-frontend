@@ -8,6 +8,6 @@ import { authOptions } from "@/lib/auth";
 export default async function DashboardIndex() {
   const session = await getServerSession(authOptions);
   const role = (session as any)?.user?.role;
-  redirect(role === "admin" ? "/dashboard/admin" : "/dashboard/chef");
+  redirect(role === "admin" ? "/dashboard/admin" : "/dashboard/manager");
 }
 

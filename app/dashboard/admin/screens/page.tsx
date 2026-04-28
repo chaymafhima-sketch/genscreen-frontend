@@ -27,7 +27,7 @@ import {
 export default function ScreensPage() {
   const [screens, setScreens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [agencies, setAgencies] = useState<any[]>([]);
+  const [etablissements, setEtablissements] = useState<any[]>([]);
   const [contents, setContents] = useState<any[]>([]);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isAssigningContent, setIsAssigningContent] = useState(false);
@@ -39,7 +39,7 @@ export default function ScreensPage() {
   const [searchQuery, setSearchQuery] = useState("");
   
   // Form state
-  const [formData, setFormData] = useState({ name: '', agencyId: '', location: '' });
+  const [formData, setFormData] = useState({ name: '', etablissementId: '', location: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [isContentModalOpen, setIsContentModalOpen] = useState(false);
@@ -61,12 +61,12 @@ export default function ScreensPage() {
     }
   };
 
-  const fetchAgencies = async () => {
+  const fetchetablissements = async () => {
     try {
-      const res = await fetch("/api/backend/agencies", { cache: "no-store" });
+      const res = await fetch("/api/backend/etablissements", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
-        setAgencies(data);
+        setEtablissements(data);
       }
     } catch (err) {
       console.error(err);
@@ -100,7 +100,7 @@ export default function ScreensPage() {
 
   useEffect(() => {
     fetchScreens();
-    fetchAgencies();
+    fetchetablissements();
     fetchContents();
     const interval = setInterval(fetchScreens, 15000); // 15s for more real-time feel
     return () => clearInterval(interval);
@@ -119,10 +119,10 @@ export default function ScreensPage() {
 
   const openEditModal = (screen: any) => {
     setEditingId(screen._id || screen.id);
-    const agencyId = screen.agencyId || (screen.agency?._id || screen.agency?.id) || '';
+    const etablissementId = screen.etablissementId || (screen.agency?._id || screen.agency?.id) || '';
     setFormData({ 
       name: screen.name || '', 
-      agencyId: String(agencyId), 
+      etablissementId: String(etablissementId), 
       location: screen.location || '' 
     });
     setIsModalOpen(true);
@@ -130,7 +130,7 @@ export default function ScreensPage() {
 
   const openAddModal = () => {
     setEditingId(null);
-    setFormData({ name: '', agencyId: '', location: '' });
+    setFormData({ name: '', etablissementId: '', location: '' });
     setIsModalOpen(true);
   };
 
@@ -250,7 +250,7 @@ export default function ScreensPage() {
       setTimeout(() => {
         setIsModalOpen(false);
         setSubmitSuccess(false);
-        setFormData({ name: '', agencyId: '', location: '' });
+        setFormData({ name: '', etablissementId: '', location: '' });
         setEditingId(null);
       }, 1500);
     } catch (err) {
@@ -336,7 +336,7 @@ export default function ScreensPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
           <input 
             type="text" 
-            placeholder="Rechercher par nom ou agence..."
+            placeholder="Rechercher par nom ou établissement..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-background border border-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground"
@@ -396,7 +396,7 @@ export default function ScreensPage() {
                        <h3 className="text-foreground font-bold tracking-tight">{screen.name}</h3>
                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
                           <Building2 size={12} className="text-primary" />
-                          {screen.agency?.name || "Sans agence"}
+                          {screen.agency?.name || "Sans établissement"}
                        </p>
                     </div>
                     <div className="px-2 py-1 bg-primary/10 border border-primary/20 rounded-md">
@@ -466,8 +466,12 @@ export default function ScreensPage() {
                    <div className="h-20 w-20 bg-emerald-500/10 text-emerald-500 rounded-3xl flex items-center justify-center mb-6 border border-emerald-500/20">
                       <CheckCircle2 size={40} />
                    </div>
-                   <h3 className="text-xl font-bold text-foreground mb-2">Enregistrement Réussi</h3>
-                   <p className="text-muted-foreground">L'écran a été configuré et peut maintenant recevoir des flux.</p>
+                   <h3 className="text-xl font-bold text-foreground mb-2">
+                     {editingId ? "Modification Réussie" : "Enregistrement Réussi"}
+                   </h3>
+                   <p className="text-muted-foreground">
+                     {editingId ? "Les informations de l'écran ont été mises à jour." : "L'écran a été configuré et peut maintenant recevoir des flux."}
+                   </p>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
@@ -485,15 +489,15 @@ export default function ScreensPage() {
                     </div>
 
                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Affecter à une agence</label>
+                      <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Affecter à un établissement</label>
                       <select 
                          required
-                         value={formData.agencyId}
-                         onChange={(e) => setFormData({...formData, agencyId: e.target.value})}
+                         value={formData.etablissementId}
+                         onChange={(e) => setFormData({...formData, etablissementId: e.target.value})}
                          className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                       >
-                         <option value="">Sélectionner une agence...</option>
-                         {agencies.map((agency) => (
+                         <option value="">Sélectionner un établissement...</option>
+                         {etablissements.map((agency) => (
                            <option key={agency._id || agency.id} value={agency._id || agency.id}>
                              {agency.name}
                            </option>

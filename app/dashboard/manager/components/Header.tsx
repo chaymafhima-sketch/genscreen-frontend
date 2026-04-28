@@ -26,7 +26,7 @@ export default function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { data: session } = useSession();
   const userData = ((session as any)?.user || {}) as {name?: string, fullname?: string, email?: string, role?: string};
-  const profilePath = userData.role === "admin" ? "/dashboard/admin/profile" : "/dashboard/chef/profile";
+  const profilePath = userData.role === "admin" ? "/dashboard/admin/profile" : "/dashboard/manager/profile";
   
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -35,7 +35,7 @@ export default function Header() {
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<{ agencies: any[], contents: any[], users: any[], screens: any[] }>({ agencies: [], contents: [], users: [], screens: [] });
+  const [searchResults, setSearchResults] = useState<{ etablissements: any[], contents: any[], users: any[], screens: any[] }>({ etablissements: [], contents: [], users: [], screens: [] });
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +44,7 @@ export default function Header() {
   // Real-time search logic
   useEffect(() => {
     if (searchQuery.length < 1) {
-      setSearchResults({ agencies: [], contents: [], users: [], screens: [] });
+      setSearchResults({ etablissements: [], contents: [], users: [], screens: [] });
       setShowSearchDropdown(false);
       return;
     }
@@ -53,19 +53,19 @@ export default function Header() {
       setIsSearching(true);
       setShowSearchDropdown(true);
       try {
-        const [resAgencies, resContent, resUsers, resScreens] = await Promise.all([
-          fetch("/api/backend/agencies", { cache: "no-store" }),
+        const [resetablissements, resContent, resUsers, resScreens] = await Promise.all([
+          fetch("/api/backend/etablissements", { cache: "no-store" }),
           fetch("/api/backend/content", { cache: "no-store" }),
           fetch("/api/backend/users", { cache: "no-store" }),
           fetch("/api/backend/screens", { cache: "no-store" }),
         ]);
 
-        const agencies = resAgencies.ok ? await resAgencies.json() : [];
+        const etablissements = resetablissements.ok ? await resetablissements.json() : [];
         const contents = resContent.ok ? await resContent.json() : [];
         const users = resUsers.ok ? await resUsers.json() : [];
         const screens = resScreens.ok ? await resScreens.json() : [];
 
-        const filteredAgencies = agencies.filter((a: any) => 
+        const filteredetablissements = etablissements.filter((a: any) => 
           `${a.name || ""} ${a.city || ""} ${a.address || ""}`.toLowerCase().includes(searchQuery.toLowerCase())
         ).slice(0, 3);
 
@@ -81,7 +81,7 @@ export default function Header() {
           `${s.name || ""} ${s.status || ""} ${s.ip || ""}`.toLowerCase().includes(searchQuery.toLowerCase())
         ).slice(0, 3);
 
-        setSearchResults({ agencies: filteredAgencies, contents: filteredContents, users: filteredUsers, screens: filteredScreens });
+        setSearchResults({ etablissements: filteredetablissements, contents: filteredContents, users: filteredUsers, screens: filteredScreens });
       } catch (err) {
         console.error(err);
       } finally {
@@ -129,7 +129,7 @@ export default function Header() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => searchQuery.length >= 2 && setShowSearchDropdown(true)}
-            placeholder="Rechercher agences, chefs, écrans, contenus..." 
+            placeholder="Rechercher �tablissements, chefs, écrans, contenus..." 
             className="w-full bg-muted/60 border border-border text-foreground text-sm rounded-xl pl-12 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all placeholder:text-muted-foreground/40 shadow-sm"
           />
         </form>
@@ -147,15 +147,15 @@ export default function Header() {
                     <div className="h-5 w-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                     <span className="text-xs">Recherche en cours...</span>
                  </div>
-              ) : (searchResults.agencies.length === 0 && searchResults.contents.length === 0 && searchResults.users.length === 0 && searchResults.screens.length === 0) ? (
+              ) : (searchResults.etablissements.length === 0 && searchResults.contents.length === 0 && searchResults.users.length === 0 && searchResults.screens.length === 0) ? (
                 <div className="p-8 text-center text-muted-foreground text-xs">Aucun résultat pour "{searchQuery}"</div>
               ) : (
                 <>
                   {/* Agency Results */}
-                  {searchResults.agencies.map((agency) => (
+                  {searchResults.etablissements.map((agency) => (
                     <button 
                       key={agency._id || agency.id}
-                      onClick={() => { router.push('/dashboard/admin/agencies'); setShowSearchDropdown(false); }}
+                      onClick={() => { router.push('/dashboard/admin/etablissements'); setShowSearchDropdown(false); }}
                       className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted text-left transition-colors group"
                     >
                       <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
@@ -163,7 +163,7 @@ export default function Header() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-foreground truncate">{agency.name}</p>
-                        <p className="text-[10px] text-muted-foreground">Agence · {agency.location || "Locale"}</p>
+                        <p className="text-[10px] text-muted-foreground">�tablissement · {agency.location || "Locale"}</p>
                       </div>
                       <ArrowRight size={14} className="text-foreground opacity-0 group-hover:opacity-100 transition-all" />
                     </button>

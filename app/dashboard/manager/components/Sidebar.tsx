@@ -20,10 +20,10 @@ export default function Sidebar({ links, role }: { links: SidebarLinkType[], rol
   const userData = ((session as any)?.user || {}) as {name?: string, fullname?: string, email?: string};
 
   // On considère un lien actif si :
-  // 1. C'est le lien "Vue d'ensemble" (exactement /dashboard/admin ou /dashboard/chef)
+  // 1. C'est le lien "Vue d'ensemble" (exactement /dashboard/admin ou /dashboard/manager)
   // 2. Ou si l'URL actuelle commence par ce lien (pour les sous-pages des autres sections)
   const checkActive = (href: string) => {
-    if (href === "/dashboard/admin" || href === "/dashboard/chef") {
+    if (href === "/dashboard/admin" || href === "/dashboard/manager") {
       return pathname === href;
     }
     return pathname === href || pathname.startsWith(href + "/");

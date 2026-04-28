@@ -559,7 +559,7 @@ export default function ContentPage() {
                       />
                       <div>
                         <p className="text-sm font-medium text-slate-900 dark:text-slate-200">{screen.name || "Écran"}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{screen.agency?.name || "Sans agence"}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{screen.agency?.name || "Sans �tablissement"}</p>
                       </div>
                     </label>
                   );

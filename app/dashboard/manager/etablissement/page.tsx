@@ -19,8 +19,8 @@ import {
   X
 } from "lucide-react";
 
-export default function ChefAgenciesPage() {
-  const [agencies, setAgencies] = useState<any[]>([]);
+export default function ChefetablissementsPage() {
+  const [etablissements, setEtablissements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [userData, setUserData] = useState<any>(null);
@@ -32,18 +32,18 @@ export default function ChefAgenciesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  const fetchMyAgencies = async () => {
+  const fetchMyetablissements = async () => {
     try {
       const profileRes = await fetch("/api/backend/users/profile", { cache: "no-store" });
       const user = profileRes.ok ? await profileRes.json() : null;
       if (!user) return;
       setUserData(user);
 
-      const res = await fetch("/api/backend/agencies", { cache: "no-store" });
+      const res = await fetch("/api/backend/etablissements", { cache: "no-store" });
       if (res.ok) {
-        // Backend should already return only agencies assigned to current chef
-        const assignedAgencies = await res.json();
-        setAgencies(assignedAgencies || []);
+        // Backend should already return only etablissements assigned to current chef
+        const assignedetablissements = await res.json();
+        setEtablissements(assignedetablissements || []);
       }
     } catch (err) {
       console.error(err);
@@ -53,13 +53,13 @@ export default function ChefAgenciesPage() {
   };
 
   useEffect(() => {
-    fetchMyAgencies();
+    fetchMyetablissements();
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette agence ?")) return;
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette �tablissement ?")) return;
     try {
-      const res = await fetch(`/api/backend/agencies/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/backend/etablissements/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
 
       // Log deletion
@@ -69,16 +69,16 @@ export default function ChefAgenciesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "warning",
-          action: "Suppression agence",
-          source: "Chef d'Agence",
+          action: "Suppression �tablissement",
+          source: "Manager",
           user: user.name || user.email || "Chef",
-          details: `Suppression définitive d'une agence locale.`
+          details: `Suppression définitive d'une �tablissement locale.`
         })
       });
 
-      fetchMyAgencies();
+      fetchMyetablissements();
     } catch (err: any) {
-      alert(err.message || "Impossible de supprimer cette agence");
+      alert(err.message || "Impossible de supprimer cette �tablissement");
     }
   };
 
@@ -97,7 +97,7 @@ export default function ChefAgenciesPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/backend/agencies/${editingId}`, {
+      const res = await fetch(`/api/backend/etablissements/${editingId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -114,15 +114,15 @@ export default function ChefAgenciesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "info",
-          action: "Modification agence",
-          source: "Chef d'Agence",
+          action: "Modification �tablissement",
+          source: "Manager",
           user: user.name || user.email || "Chef",
-          details: `Mise à jour de l'agence "${formData.name}"`
+          details: `Mise à jour de l'�tablissement "${formData.name}"`
         })
       });
 
       setSubmitSuccess(true);
-      fetchMyAgencies();
+      fetchMyetablissements();
       setTimeout(() => {
         setIsModalOpen(false);
         setSubmitSuccess(false);
@@ -135,21 +135,21 @@ export default function ChefAgenciesPage() {
     }
   };
 
-  const filteredAgencies = agencies.filter(a => a.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredetablissements = etablissements.filter(a => a.name?.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h2 className="text-3xl font-bold text-foreground tracking-tight">Gestion de Mes Agences</h2>
+          <h2 className="text-3xl font-bold text-foreground tracking-tight">Gestion de Mes Établissements</h2>
           <p className="text-muted-foreground mt-2">Gérez les informations et les ressources de vos établissements.</p>
         </div>
         <div className="flex bg-muted p-1.5 rounded-2xl border border-border items-center gap-1">
           <div className="px-5 py-2 text-xs font-black text-primary uppercase tracking-widest border-border">
-            {filteredAgencies.length} Agences
+            {filteredetablissements.length} Établissements
           </div>
           <button
-            onClick={fetchMyAgencies}
+            onClick={fetchMyetablissements}
             className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-background transition-all active:rotate-180 duration-500"
             title="Rafraîchir"
           >
@@ -166,7 +166,7 @@ export default function ChefAgenciesPage() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Rechercher une agence spécifique..."
+          placeholder="Rechercher un établissement spécifique..."
           className="w-full bg-card border border-border rounded-2xl py-4 pl-14 pr-6 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all font-medium placeholder:text-muted-foreground/40 shadow-sm"
         />
       </div>
@@ -175,12 +175,12 @@ export default function ChefAgenciesPage() {
         <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" size={40} /></div>
       ) : (
         <div className="soft-card overflow-hidden border border-border shadow-sm">
-          {filteredAgencies.length === 0 ? (
+          {filteredetablissements.length === 0 ? (
             <div className="py-20 flex flex-col items-center justify-center text-center px-6 bg-muted/20">
               <Building2 size={48} className="text-muted-foreground/30 mb-4" />
-              <p className="text-lg font-bold text-foreground">Aucune agence trouvée</p>
+              <p className="text-lg font-bold text-foreground">Aucun établissement trouvé</p>
               <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                Aucune agence assignée pour le moment à votre compte.
+                Aucun établissement assigné pour le moment à votre compte.
               </p>
             </div>
           ) : (
@@ -188,14 +188,14 @@ export default function ChefAgenciesPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-muted/50 border-b border-border">
-                    <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Agence</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Établissement</th>
                     <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Localisation</th>
                     <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Contact</th>
                     <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Statut</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredAgencies.map((agency) => (
+                  {filteredetablissements.map((agency) => (
                     <tr key={agency.id || agency._id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-4">
@@ -243,7 +243,7 @@ export default function ChefAgenciesPage() {
             <div className="p-8 border-b border-border bg-muted/30">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground tracking-tight">Modifier l'agence</h2>
+                  <h2 className="text-2xl font-bold text-foreground tracking-tight">Modifier l'�tablissement</h2>
                   <p className="text-sm text-muted-foreground mt-1">Mettez à jour les coordonnées de votre établissement.</p>
                 </div>
                 <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -257,18 +257,18 @@ export default function ChefAgenciesPage() {
                 <div className="h-20 w-20 bg-emerald-500/10 text-emerald-500 rounded-3xl flex items-center justify-center mb-6 border border-emerald-500/20">
                   <CheckCircle2 size={40} />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">Mise à jour Réussie</h3>
-                <p className="text-muted-foreground">Les informations de l'agence ont été actualisées.</p>
+                <h3 className="text-xl font-bold text-foreground mb-2">Établissement modifié avec succès !</h3>
+                <p className="text-muted-foreground">Les informations de l'�tablissement ont été actualisées.</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="p-8 space-y-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom de l'agence</label>
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom de l'�tablissement</label>
                   <input
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ex: Agence Centrale"
+                    placeholder="Ex: �tablissement Centrale"
                     className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
                   />
                 </div>
