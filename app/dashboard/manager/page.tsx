@@ -2,25 +2,32 @@
 
 import { useEffect, useState } from "react";
 import Stats from "../admin/components/Stats"; // Reusing the same premium cards
-import { 
-  Plus, 
-  Send, 
-  MonitorSmartphone, 
-  Clock, 
-  ChevronRight, 
-  CheckCircle2, 
+import {
+  Plus,
+  Send,
+  MonitorSmartphone,
+  Clock,
+  ChevronRight,
+  CheckCircle2,
   Activity,
   FileVideo,
   LayoutDashboard,
   Building,
   Loader2,
   AlertCircle,
-  Globe
+  Globe,
 } from "lucide-react";
 import Link from "next/link";
 
 export default function ManagerDashboard() {
-  const [userData, setUserData] = useState<{name?: string, fullname?: string, role?: string, canDiffuse?: boolean, address?: string, city?: string}>({});
+  const [userData, setUserData] = useState<{
+    name?: string;
+    fullname?: string;
+    role?: string;
+    canDiffuse?: boolean;
+    address?: string;
+    city?: string;
+  }>({});
   const [loading, setLoading] = useState(true);
   const [etablissements, setEtablissements] = useState<any[]>([]);
   const [loadingetablissements, setLoadingetablissements] = useState(true);
@@ -30,7 +37,9 @@ export default function ManagerDashboard() {
       let currentUser = userData;
 
       try {
-        const res = await fetch("/api/backend/users/profile", { cache: "no-store" });
+        const res = await fetch("/api/backend/users/profile", {
+          cache: "no-store",
+        });
         if (res.ok) {
           const latestUser = await res.json();
           setUserData(latestUser);
@@ -43,9 +52,11 @@ export default function ManagerDashboard() {
 
       // Fetch etablissements
       try {
-        const res = await fetch("/api/backend/etablissements", { cache: "no-store" });
+        const res = await fetch("/api/backend/etablissements", {
+          cache: "no-store",
+        });
         if (res.ok) {
-          // Backend should already return only etablissements assigned to current chef
+          // Backend should already return only etablissements assigned to current manager
           const assignedetablissements = await res.json();
           setEtablissements(assignedetablissements || []);
         }
@@ -65,16 +76,14 @@ export default function ManagerDashboard() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h1 className="text-4xl font-bold text-foreground tracking-tight flex items-center gap-3">
-             <LayoutDashboard size={32} className="text-primary" />
-             Salut, {userData.fullname || userData.name || "Manager"} !
+            <LayoutDashboard size={32} className="text-primary" />
+            Salut, {userData.fullname || userData.name || "Manager"} !
           </h1>
           <div className="flex items-center gap-2 mt-2">
-            <p className="text-muted-foreground text-lg">Gérez vos écrans et diffusez vos messages en direct sur vos établissements.</p>
-            {/* {userData.city && (
-              <span className="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 animate-pulse">
-                <Globe size={12} /> Zone : {userData.city}
-              </span>
-            )} */}
+            <p className="text-muted-foreground text-lg">
+              Gérez vos écrans et diffusez vos messages en direct sur vos
+              établissements.
+            </p>
           </div>
         </div>
       </div>
@@ -89,44 +98,71 @@ export default function ManagerDashboard() {
           <div className="flex justify-between items-center mb-8">
             <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
               <MonitorSmartphone size={22} className="text-indigo-500" />
-              Mes Établissements ({etablissements.length})
+              Mes Etablissements ({etablissements.length})
             </h3>
-            <Link href="/dashboard/manager/screens" className="text-xs font-bold text-primary hover:opacity-80 uppercase tracking-widest flex items-center gap-1 group">
-              Écrans <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            <Link
+              href="/dashboard/manager/screens"
+              className="text-xs font-bold text-primary hover:opacity-80 uppercase tracking-widest flex items-center gap-1 group"
+            >
+              Ecrans{" "}
+              <ChevronRight
+                size={14}
+                className="group-hover:translate-x-1 transition-transform"
+              />
             </Link>
           </div>
-          
+
           <div className="space-y-4">
-             {loadingetablissements ? (
-               <div className="flex flex-col items-center py-10 text-muted-foreground animate-pulse">
-                 <Loader2 className="animate-spin mb-2" size={24} />
-                 <p className="text-xs">Recherche de vos établissements...</p>
-               </div>
-             ) : etablissements.length > 0 ? (
-               etablissements.map((agency, i) => (
-                 <div key={agency._id || i} className="bg-muted/30 border border-border/40 p-4 rounded-2xl flex items-center justify-between transition-all hover:border-primary/30 group">
-                    <div className="flex items-center gap-4">
-                       <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                          <Building size={20} />
-                       </div>
-                       <div>
-                          <p className="text-sm font-bold text-foreground">{agency.name}</p>
-                          <p className="text-[10px] text-primary font-bold uppercase tracking-tight">{agency.city || "Ville non renseignée"}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">{agency.address}</p>
-                       </div>
+            {loadingetablissements ? (
+              <div className="flex flex-col items-center py-10 text-muted-foreground animate-pulse">
+                <Loader2 className="animate-spin mb-2" size={24} />
+                <p className="text-xs">Recherche de vos établissements...</p>
+              </div>
+            ) : etablissements.length > 0 ? (
+              etablissements.map((etablissement, i) => (
+                <div
+                  key={etablissement._id || i}
+                  className="bg-muted/30 border border-border/40 p-4 rounded-2xl flex items-center justify-between transition-all hover:border-primary/30 group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                      <Building size={20} />
                     </div>
-                    <Activity size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
-                 </div>
-               ))
-             ) : (
-               <div className="flex flex-col items-center py-10 text-center px-6">
-                 <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
-                   <AlertCircle size={24} className="text-muted-foreground" />
-                 </div>
-                 <p className="text-sm font-bold text-foreground">Aucune �tablissement assignée</p>
-                 <p className="text-xs text-muted-foreground mt-1">Vos �tablissements s'afficheront ici en fonction de votre ville : <span className="font-bold text-primary">{userData.city || "Non définie"}</span></p>
-               </div>
-             )}
+                    <div>
+                      <p className="text-sm font-bold text-foreground">
+                        {etablissement.name}
+                      </p>
+                      <p className="text-[10px] text-primary font-bold uppercase tracking-tight">
+                        {etablissement.city || "Ville non renseignée"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {etablissement.address}
+                      </p>
+                    </div>
+                  </div>
+                  <Activity
+                    size={16}
+                    className="text-muted-foreground group-hover:text-primary transition-colors"
+                  />
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center py-10 text-center px-6">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                  <AlertCircle size={24} className="text-muted-foreground" />
+                </div>
+                <p className="text-sm font-bold text-foreground">
+                  Aucun Etablissement assigné
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Vos Etablissements s&apos;afficheront ici en fonction de votre
+                  ville :{" "}
+                  <span className="font-bold text-primary">
+                    {userData.city || "Non définie"}
+                  </span>
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

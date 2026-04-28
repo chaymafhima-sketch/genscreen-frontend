@@ -156,7 +156,7 @@ export default function LogsPage() {
             </div>
             <div className="h-10 w-px bg-border" />
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase">Total Événements</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase">Total Evenements</span>
               <span className="text-xl font-bold text-foreground">{stats.total}</span>
             </div>
           </div>
@@ -181,7 +181,7 @@ export default function LogsPage() {
             <thead className="sticky top-0 bg-muted/90 backdrop-blur-md z-10">
               <tr className="border-b border-border">
                 <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Status</th>
-                <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Événement</th>
+                <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Evenement</th>
                 <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Source</th>
                 <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Utilisateur</th>
                 <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right">Horodatage</th>

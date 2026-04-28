@@ -75,16 +75,16 @@ function SearchContent() {
               �tablissements ({results.etablissements.length})
             </h2>
             <div className="space-y-3">
-              {results.etablissements.length > 0 ? results.etablissements.map((agency) => (
-                <Link key={agency._id || agency.id} href="/dashboard/admin/etablissements">
+              {results.etablissements.length > 0 ? results.etablissements.map((etablissement) => (
+                <Link key={etablissement._id || etablissement.id} href="/dashboard/admin/etablissements">
                   <div className="group bg-slate-900/40 backdrop-blur-xl border border-slate-800/50 p-4 rounded-xl hover:border-blue-500/50 transition-all flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="h-10 w-10 rounded-lg bg-slate-950 flex items-center justify-center text-slate-400">
                         <Building2 size={20} />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-white mb-0.5">{agency.name}</h4>
-                        <p className="text-xs text-slate-500">{agency.location || "Adresse non spécifiée"}</p>
+                        <h4 className="text-sm font-bold text-white mb-0.5">{etablissement.name}</h4>
+                        <p className="text-xs text-slate-500">{etablissement.location || "Adresse non spécifiée"}</p>
                       </div>
                     </div>
                     <ArrowRight size={18} className="text-slate-600 group-hover:text-blue-400 transition-colors" />

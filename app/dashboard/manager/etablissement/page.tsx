@@ -16,10 +16,10 @@ import {
   RefreshCcw,
   Edit2,
   Trash2,
-  X
+  X,
 } from "lucide-react";
 
-export default function ChefetablissementsPage() {
+export default function manageretablissementsPage() {
   const [etablissements, setEtablissements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -28,20 +28,29 @@ export default function ChefetablissementsPage() {
   // Modal & Form state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', address: '', city: '', phone: '' });
+  const [formData, setFormData] = useState({
+    name: "",
+    address: "",
+    city: "",
+    phone: "",
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const fetchMyetablissements = async () => {
     try {
-      const profileRes = await fetch("/api/backend/users/profile", { cache: "no-store" });
+      const profileRes = await fetch("/api/backend/users/profile", {
+        cache: "no-store",
+      });
       const user = profileRes.ok ? await profileRes.json() : null;
       if (!user) return;
       setUserData(user);
 
-      const res = await fetch("/api/backend/etablissements", { cache: "no-store" });
+      const res = await fetch("/api/backend/etablissements", {
+        cache: "no-store",
+      });
       if (res.ok) {
-        // Backend should already return only etablissements assigned to current chef
+        // Backend should already return only etablissements assigned to current manager
         const assignedetablissements = await res.json();
         setEtablissements(assignedetablissements || []);
       }
@@ -57,9 +66,16 @@ export default function ChefetablissementsPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette �tablissement ?")) return;
+    if (
+      !window.confirm(
+        "Êtes-vous sûr de vouloir supprimer cette �tablissement ?",
+      )
+    )
+      return;
     try {
-      const res = await fetch(`/api/backend/etablissements/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/backend/etablissements/${id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
 
       // Log deletion
@@ -71,9 +87,9 @@ export default function ChefetablissementsPage() {
           type: "warning",
           action: "Suppression �tablissement",
           source: "Manager",
-          user: user.name || user.email || "Chef",
-          details: `Suppression définitive d'une �tablissement locale.`
-        })
+          user: user.name || user.email || "manager",
+          details: `Suppression définitive d'une �tablissement locale.`,
+        }),
       });
 
       fetchMyetablissements();
@@ -82,13 +98,13 @@ export default function ChefetablissementsPage() {
     }
   };
 
-  const openEditModal = (agency: any) => {
-    setEditingId(agency._id || agency.id);
+  const openEditModal = (etablissement: any) => {
+    setEditingId(etablissement._id || etablissement.id);
     setFormData({
-      name: agency.name || '',
-      address: agency.address || '',
-      city: agency.city || '',
-      phone: agency.phone || ''
+      name: etablissement.name || "",
+      address: etablissement.address || "",
+      city: etablissement.city || "",
+      phone: etablissement.phone || "",
     });
     setIsModalOpen(true);
   };
@@ -102,7 +118,7 @@ export default function ChefetablissementsPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
       if (!res.ok) throw new Error("Erreur lors de l'enregistrement");
@@ -116,9 +132,9 @@ export default function ChefetablissementsPage() {
           type: "info",
           action: "Modification �tablissement",
           source: "Manager",
-          user: user.name || user.email || "Chef",
-          details: `Mise à jour de l'�tablissement "${formData.name}"`
-        })
+          user: user.name || user.email || "manager",
+          details: `Mise à jour de l'�tablissement "${formData.name}"`,
+        }),
       });
 
       setSubmitSuccess(true);
@@ -135,18 +151,24 @@ export default function ChefetablissementsPage() {
     }
   };
 
-  const filteredetablissements = etablissements.filter(a => a.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredetablissements = etablissements.filter((a) =>
+    a.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h2 className="text-3xl font-bold text-foreground tracking-tight">Gestion de Mes Établissements</h2>
-          <p className="text-muted-foreground mt-2">Gérez les informations et les ressources de vos établissements.</p>
+          <h2 className="text-3xl font-bold text-foreground tracking-tight">
+            Gestion de Mes Etablissements
+          </h2>
+          <p className="text-muted-foreground mt-2">
+            Gerez les informations et les ressources de vos etablissements.
+          </p>
         </div>
         <div className="flex bg-muted p-1.5 rounded-2xl border border-border items-center gap-1">
           <div className="px-5 py-2 text-xs font-black text-primary uppercase tracking-widest border-border">
-            {filteredetablissements.length} Établissements
+            {filteredetablissements.length} Etablissements
           </div>
           <button
             onClick={fetchMyetablissements}
@@ -172,13 +194,17 @@ export default function ChefetablissementsPage() {
       </div>
 
       {loading ? (
-        <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" size={40} /></div>
+        <div className="py-20 flex justify-center">
+          <Loader2 className="animate-spin text-primary" size={40} />
+        </div>
       ) : (
         <div className="soft-card overflow-hidden border border-border shadow-sm">
           {filteredetablissements.length === 0 ? (
             <div className="py-20 flex flex-col items-center justify-center text-center px-6 bg-muted/20">
               <Building2 size={48} className="text-muted-foreground/30 mb-4" />
-              <p className="text-lg font-bold text-foreground">Aucun établissement trouvé</p>
+              <p className="text-lg font-bold text-foreground">
+                Aucun établissement trouvé
+              </p>
               <p className="text-sm text-muted-foreground mt-1 max-w-sm">
                 Aucun établissement assigné pour le moment à votre compte.
               </p>
@@ -188,40 +214,60 @@ export default function ChefetablissementsPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-muted/50 border-b border-border">
-                    <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Établissement</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Localisation</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Contact</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Statut</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                      Etablissement
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                      Localisation
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                      Contact
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                      Statut
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredetablissements.map((agency) => (
-                    <tr key={agency.id || agency._id} className="hover:bg-muted/30 transition-colors">
+                  {filteredetablissements.map((etablissement) => (
+                    <tr
+                      key={etablissement.id || etablissement._id}
+                      className="hover:bg-muted/30 transition-colors"
+                    >
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-4">
                           <div className="h-10 w-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
                             <Building2 size={20} />
                           </div>
                           <div>
-                            <p className="font-bold text-foreground leading-none">{agency.name}</p>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1.5">ID: {agency.id?.slice(-6) || agency._id?.slice(-6) || "LOCAL"}</p>
+                            <p className="font-bold text-foreground leading-none">
+                              {etablissement.name}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1.5">
+                              ID:{" "}
+                              {etablissement.id?.slice(-6) ||
+                                etablissement._id?.slice(-6) ||
+                                "LOCAL"}
+                            </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-1.5 text-foreground font-bold text-sm">
-                          <Globe size={14} className="text-primary" /> {agency.city || "—"}
+                          <Globe size={14} className="text-primary" />{" "}
+                          {etablissement.city || "—"}
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-1.5 text-muted-foreground text-xs font-medium">
-                          <Phone size={14} className="text-primary/60" /> {agency.phone || "—"}
+                          <Phone size={14} className="text-primary/60" />{" "}
+                          {etablissement.phone || "—"}
                         </div>
                       </td>
                       <td className="px-6 py-5">
                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest">
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          {agency.status || 'Opérationnel'}
+                          {etablissement.status || "Opérationnel"}
                         </div>
                       </td>
                     </tr>
@@ -232,21 +278,30 @@ export default function ChefetablissementsPage() {
           )}
         </div>
       )}
-      {/* Modal - Edit Agency */}
+      {/* Modal - Edit etablissement */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-background/60 backdrop-blur-md transition-opacity"
-            onClick={() => !isSubmitting && !submitSuccess && setIsModalOpen(false)}
+            onClick={() =>
+              !isSubmitting && !submitSuccess && setIsModalOpen(false)
+            }
           />
           <div className="relative w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-8 border-b border-border bg-muted/30">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground tracking-tight">Modifier l'�tablissement</h2>
-                  <p className="text-sm text-muted-foreground mt-1">Mettez à jour les coordonnées de votre établissement.</p>
+                  <h2 className="text-2xl font-bold text-foreground tracking-tight">
+                    Modifier l'Etablissement
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Mettez à jour les coordonnées de votre établissement.
+                  </p>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
                   <X size={24} />
                 </button>
               </div>
@@ -257,39 +312,55 @@ export default function ChefetablissementsPage() {
                 <div className="h-20 w-20 bg-emerald-500/10 text-emerald-500 rounded-3xl flex items-center justify-center mb-6 border border-emerald-500/20">
                   <CheckCircle2 size={40} />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">Établissement modifié avec succès !</h3>
-                <p className="text-muted-foreground">Les informations de l'�tablissement ont été actualisées.</p>
+                <h3 className="text-xl font-bold text-foreground mb-2">
+                  Etablissement modifie avec succès !
+                </h3>
+                <p className="text-muted-foreground">
+                  Les informations de l'Etablissement ont été actualisées.
+                </p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="p-8 space-y-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom de l'�tablissement</label>
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Nom de l'Etablissement
+                  </label>
                   <input
                     required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ex: �tablissement Centrale"
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    placeholder="Ex: Etablissement Centrale"
                     className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Ville</label>
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Ville
+                    </label>
                     <input
                       required
                       value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, city: e.target.value })
+                      }
                       placeholder="Ex: Tunis"
                       className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Téléphone</label>
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                      Téléphone
+                    </label>
                     <input
                       required
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
                       placeholder="Ex: 71 000 000"
                       className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
                     />
@@ -297,11 +368,15 @@ export default function ChefetablissementsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Adresse</label>
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Adresse
+                  </label>
                   <input
                     required
                     value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, address: e.target.value })
+                    }
                     placeholder="Ex: 12 Rue de l'Indépendance"
                     className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
                   />
@@ -320,7 +395,11 @@ export default function ChefetablissementsPage() {
                     disabled={isSubmitting}
                     className="flex-1 bg-primary hover:opacity-90 text-primary-foreground font-semibold py-3 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
                   >
-                    {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : "Enregistrer"}
+                    {isSubmitting ? (
+                      <Loader2 size={20} className="animate-spin" />
+                    ) : (
+                      "Enregistrer"
+                    )}
                   </button>
                 </div>
               </form>
@@ -331,4 +410,3 @@ export default function ChefetablissementsPage() {
     </div>
   );
 }
-

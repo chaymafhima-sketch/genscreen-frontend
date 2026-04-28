@@ -119,7 +119,7 @@ export default function ScreensPage() {
 
   const openEditModal = (screen: any) => {
     setEditingId(screen._id || screen.id);
-    const etablissementId = screen.etablissementId || (screen.agency?._id || screen.agency?.id) || '';
+    const etablissementId = screen.etablissementId || (screen.etablissement?._id || screen.etablissement?.id) || '';
     setFormData({ 
       name: screen.name || '', 
       etablissementId: String(etablissementId), 
@@ -262,7 +262,7 @@ export default function ScreensPage() {
 
   const filteredScreens = screens.filter(s => 
     s.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    s.agency?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    s.etablissement?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const stats = {
@@ -396,7 +396,7 @@ export default function ScreensPage() {
                        <h3 className="text-foreground font-bold tracking-tight">{screen.name}</h3>
                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
                           <Building2 size={12} className="text-primary" />
-                          {screen.agency?.name || "Sans établissement"}
+                          {screen.etablissement?.name || "Sans établissement"}
                        </p>
                     </div>
                     <div className="px-2 py-1 bg-primary/10 border border-primary/20 rounded-md">
@@ -497,9 +497,9 @@ export default function ScreensPage() {
                          className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                       >
                          <option value="">Sélectionner un établissement...</option>
-                         {etablissements.map((agency) => (
-                           <option key={agency._id || agency.id} value={agency._id || agency.id}>
-                             {agency.name}
+                         {etablissements.map((etablissement) => (
+                           <option key={etablissement._id || etablissement.id} value={etablissement._id || etablissement.id}>
+                             {etablissement.name}
                            </option>
                          ))}
                       </select>

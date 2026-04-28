@@ -5,7 +5,7 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div>
-        <h1 className="text-3xl font-bold text-foreground tracking-tight">Vue d'ensemble</h1>
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">Vue d&apos;ensemble</h1>
         <p className="text-muted-foreground mt-2">Bienvenue sur votre tableau de bord centralisé.</p>
       </div>
 

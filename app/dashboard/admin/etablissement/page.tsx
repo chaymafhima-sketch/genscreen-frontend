@@ -1,7 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, X, Loader2, AlertCircle, Building2, MapPin, Phone, Building, Edit2, Trash2, Search, Globe, RefreshCcw, Users } from "lucide-react";
+import {
+  Plus,
+  X,
+  Loader2,
+  AlertCircle,
+  Building2,
+  MapPin,
+  Phone,
+  Building,
+  Edit2,
+  Trash2,
+  Search,
+  Globe,
+  RefreshCcw,
+  Users,
+} from "lucide-react";
 import { TUNISIA_CITIES } from "@/app/lib/constants/tunisia-cities";
 
 export default function EtablissementsPage() {
@@ -9,7 +24,12 @@ export default function EtablissementsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ name: '', address: '', city: '', phone: '' });
+  const [formData, setFormData] = useState({
+    name: "",
+    address: "",
+    city: "",
+    phone: "",
+  });
   const [users, setUsers] = useState<any[]>([]);
   const [userIds, setUserIds] = useState<string[]>([]);
   const [initialUserIds, setInitialUserIds] = useState<string[]>([]);
@@ -27,7 +47,7 @@ export default function EtablissementsPage() {
       const data = await res.json();
       setUsers(data || []);
     } catch (err: any) {
-      // Keep etablissement screen usable even if users fetch fails
+      // Keep établissement screen usable even if users fetch fails
       console.error(err?.message || err);
       setUsers([]);
     }
@@ -35,7 +55,9 @@ export default function EtablissementsPage() {
 
   const fetchetablissements = async () => {
     try {
-      const res = await fetch("/api/backend/etablissements", { cache: "no-store" });
+      const res = await fetch("/api/backend/etablissements", {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error("Erreur de récupération des établissements");
       const data = await res.json();
       setEtablissements(data);
@@ -52,7 +74,10 @@ export default function EtablissementsPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce établissement ?")) return;
+    if (
+      !window.confirm("Êtes-vous sûr de vouloir supprimer ce établissement ?")
+    )
+      return;
     try {
       const res = await fetch(`/api/backend/etablissements/${id}`, {
         method: "DELETE",
@@ -64,13 +89,18 @@ export default function EtablissementsPage() {
     }
   };
 
-  const openEditModal = (agency: any) => {
-    setEditingId(agency._id || agency.id);
-    setFormData({ name: agency.name || '', address: agency.address || '', city: agency.city || '', phone: agency.phone || '' });
+  const openEditModal = (etablissement: any) => {
+    setEditingId(etablissement._id || etablissement.id);
+    setFormData({
+      name: etablissement.name || "",
+      address: etablissement.address || "",
+      city: etablissement.city || "",
+      phone: etablissement.phone || "",
+    });
 
     const currentUserIds: string[] =
-      agency?.userIds ||
-      agency?.users?.map((u: any) => u?._id || u?.id).filter(Boolean) ||
+      etablissement?.userIds ||
+      etablissement?.users?.map((u: any) => u?._id || u?.id).filter(Boolean) ||
       [];
 
     setUserIds(currentUserIds);
@@ -81,7 +111,7 @@ export default function EtablissementsPage() {
 
   const openAddModal = () => {
     setEditingId(null);
-    setFormData({ name: '', address: '', city: '', phone: '' });
+    setFormData({ name: "", address: "", city: "", phone: "" });
     setUserIds([]);
     setInitialUserIds([]);
     setUsersQuery("");
@@ -104,14 +134,18 @@ export default function EtablissementsPage() {
       if (editingId) {
         // If users changed, assign/replace via dedicated endpoint (admin only)
         if (!arraysEqual(userIds, initialUserIds)) {
-          const assignRes = await fetch(`/api/backend/etablissements/${editingId}/assign-users`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
+          const assignRes = await fetch(
+            `/api/backend/etablissements/${editingId}/assign-users`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ userIds }),
             },
-            body: JSON.stringify({ userIds })
-          });
-          if (!assignRes.ok) throw new Error("Erreur lors de l'assignation des utilisateurs");
+          );
+          if (!assignRes.ok)
+            throw new Error("Erreur lors de l'assignation des utilisateurs");
           setInitialUserIds(userIds);
         }
 
@@ -120,26 +154,27 @@ export default function EtablissementsPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(formData)
+          body: JSON.stringify(formData),
         });
       } else {
-        if (!userIds.length) throw new Error("Veuillez sélectionner au moins un utilisateur");
+        if (!userIds.length)
+          throw new Error("Veuillez sélectionner au moins un utilisateur");
         res = await fetch("/api/backend/etablissements", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ ...formData, userIds })
+          body: JSON.stringify({ ...formData, userIds }),
         });
       }
-      
+
       if (!res.ok) throw new Error("Erreur lors de l'enregistrement");
       setSubmitSuccess(true);
       fetchetablissements();
       setTimeout(() => {
         setIsModalOpen(false);
         setSubmitSuccess(false);
-        setFormData({ name: '', address: '', city: '', phone: '' });
+        setFormData({ name: "", address: "", city: "", phone: "" });
         setUserIds([]);
         setInitialUserIds([]);
         setEditingId(null);
@@ -154,32 +189,45 @@ export default function EtablissementsPage() {
   const filteredUsers = users.filter((u: any) => {
     const q = usersQuery.toLowerCase().trim();
     if (!q) return true;
-    const label = `${u?.fullname || u?.name || ""} ${u?.email || ""} ${u?.role || ""}`.toLowerCase();
+    const label =
+      `${u?.fullname || u?.name || ""} ${u?.email || ""} ${u?.role || ""}`.toLowerCase();
     return label.includes(q);
   });
 
-  const filteredetablissements = etablissements.filter(agency => 
-    (agency.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (agency.address || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (agency.city || "").toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredetablissements = etablissements.filter(
+    (etablissement) =>
+      (etablissement.name || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      (etablissement.address || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      (etablissement.city || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()),
   );
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">Établissements</h1>
-          <p className="text-muted-foreground mt-2">Gérez vos différents établissements et leurs configurations globales.</p>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">
+            Établissements
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Gérez vos différents établissements et leurs configurations
+            globales.
+          </p>
         </div>
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={fetchetablissements}
             className="p-2.5 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all active:rotate-180 duration-500"
             title="Rafraîchir"
           >
             <RefreshCcw size={20} />
           </button>
-          <button 
+          <button
             onClick={openAddModal}
             className="bg-primary hover:opacity-90 text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
           >
@@ -191,16 +239,21 @@ export default function EtablissementsPage() {
       <div className="soft-card overflow-hidden min-h-[400px] flex flex-col transition-colors shadow-sm">
         <div className="p-4 border-b border-border flex justify-between items-center bg-muted/30 transition-colors">
           <div className="relative w-72 group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
-            <input 
-              type="text" 
-              placeholder="Rechercher un établissement..." 
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors"
+              size={18}
+            />
+            <input
+              type="text"
+              placeholder="Rechercher un établissement..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-background border border-border rounded-xl py-2 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/60"
             />
           </div>
-          <span className="text-sm font-medium text-muted-foreground">{filteredetablissements.length} établissements au total</span>
+          <span className="text-sm font-medium text-muted-foreground">
+            {filteredetablissements.length} établissements au total
+          </span>
         </div>
 
         <div className="flex-1 p-0">
@@ -217,49 +270,72 @@ export default function EtablissementsPage() {
           ) : filteredetablissements.length === 0 ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-muted-foreground">
               <Building size={48} className="mb-4 opacity-50" />
-              <p>{searchQuery ? "Aucun établissement ne correspond à votre recherche." : "Aucun établissement trouvé."}</p>
+              <p>
+                {searchQuery
+                  ? "Aucun établissement ne correspond à votre recherche."
+                  : "Aucun établissement trouvé."}
+              </p>
             </div>
           ) : (
             <table className="w-full text-left text-sm text-muted-foreground">
               <thead className="bg-muted/50 text-xs uppercase font-medium text-muted-foreground border-b border-border transition-colors">
                 <tr>
-                  <th scope="col" className="px-6 py-4">Ville</th>
-                  <th scope="col" className="px-6 py-4">Quartier / Adresse</th>
-                  <th scope="col" className="px-6 py-4">Contact</th>
-                  <th scope="col" className="px-6 py-4">Téléphone</th>
-                  <th scope="col" className="px-6 py-4">Utilisateurs assignés</th>
-                  <th scope="col" className="px-6 py-4 text-right">Actions</th>
+                  <th scope="col" className="px-6 py-4">
+                    Ville
+                  </th>
+                  <th scope="col" className="px-6 py-4">
+                    Quartier / Adresse
+                  </th>
+                  <th scope="col" className="px-6 py-4">
+                    Contact
+                  </th>
+                  <th scope="col" className="px-6 py-4">
+                    Téléphone
+                  </th>
+                  <th scope="col" className="px-6 py-4">
+                    Utilisateurs assignés
+                  </th>
+                  <th scope="col" className="px-6 py-4 text-right">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40 transition-colors">
-                {filteredetablissements.map((agency: any) => {
-                  const agencyUserIds: string[] =
-                    agency?.userIds ||
-                    agency?.users?.map((u: any) => u?._id || u?.id).filter(Boolean) ||
+                {filteredetablissements.map((etablissement: any) => {
+                  const etablissementUserIds: string[] =
+                    etablissement?.userIds ||
+                    etablissement?.users
+                      ?.map((u: any) => u?._id || u?.id)
+                      .filter(Boolean) ||
                     [];
 
-                  const assignedUsers = users.filter((u: any) => agencyUserIds.includes(u._id || u.id));
+                  const assignedUsers = users.filter((u: any) =>
+                    etablissementUserIds.includes(u._id || u.id),
+                  );
 
                   return (
-                    <tr key={agency._id || agency.id} className="hover:bg-muted/30 transition-colors group">
+                    <tr
+                      key={etablissement._id || etablissement.id}
+                      className="hover:bg-muted/30 transition-colors group"
+                    >
                       <td className="px-6 py-4 font-medium text-foreground flex items-center gap-3">
                         <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                           <Building2 size={18} />
                         </div>
-                        {agency.name}
+                        {etablissement.name}
                       </td>
                       <td className="px-6 py-4 font-bold text-primary">
-                        {agency.city || "—"}
+                        {etablissement.city || "—"}
                       </td>
                       <td className="px-6 py-4 text-xs">
-                        {agency.address || "—"}
+                        {etablissement.address || "—"}
                       </td>
-                      <td className="px-6 py-4">
-                        {agency.phone || "—"}
-                      </td>
+                      <td className="px-6 py-4">{etablissement.phone || "—"}</td>
                       <td className="px-6 py-4">
                         {assignedUsers.length === 0 ? (
-                          <span className="text-xs text-muted-foreground">Aucun utilisateur</span>
+                          <span className="text-xs text-muted-foreground">
+                            Aucun utilisateur
+                          </span>
                         ) : (
                           <div className="flex flex-wrap gap-1.5">
                             {assignedUsers.slice(0, 3).map((u: any) => (
@@ -279,12 +355,20 @@ export default function EtablissementsPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-right space-x-2 flex items-center justify-end">
-                         <button onClick={() => openEditModal(agency)} className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors border border-primary/20" title="Modifier">
-                            <Edit2 size={16} />
-                         </button>
-                         <button onClick={() => handleDelete(agency._id || agency.id)} className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors border border-destructive/20" title="Supprimer">
-                            <Trash2 size={16} />
-                         </button>
+                        <button
+                          onClick={() => openEditModal(etablissement)}
+                          className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors border border-primary/20"
+                          title="Modifier"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(etablissement._id || etablissement.id)}
+                          className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors border border-destructive/20"
+                          title="Supprimer"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -298,18 +382,30 @@ export default function EtablissementsPage() {
       {/* Modal - Nouvelle/Modifier �tablissement */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
-          <div 
+          <div
             className="absolute inset-0 bg-background/60 backdrop-blur-md"
-            onClick={() => !isSubmitting && !submitSuccess && setIsModalOpen(false)}
+            onClick={() =>
+              !isSubmitting && !submitSuccess && setIsModalOpen(false)
+            }
           />
           <div className="relative w-full max-w-md max-h-[92vh] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
             <div className="flex justify-between items-center p-4 sm:p-6 border-b border-border bg-muted/30 shrink-0">
               <div>
-                <h2 className="text-xl font-bold text-foreground">{editingId ? "Modifier l'Établissement" : "Nouvel Établissement"}</h2>
-                <p className="text-xs text-muted-foreground mt-1">{editingId ? "Modifiez les informations." : "Ajoutez un nouvel établissement à votre réseau."}</p>
+                <h2 className="text-xl font-bold text-foreground">
+                  {editingId
+                    ? "Modifier l'Établissement"
+                    : "Nouvel Établissement"}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {editingId
+                    ? "Modifiez les informations."
+                    : "Ajoutez un nouvel établissement à votre réseau."}
+                </p>
               </div>
-              <button 
-                onClick={() => !isSubmitting && !submitSuccess && setIsModalOpen(false)}
+              <button
+                onClick={() =>
+                  !isSubmitting && !submitSuccess && setIsModalOpen(false)
+                }
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X size={20} />
@@ -322,14 +418,21 @@ export default function EtablissementsPage() {
                   <Building2 size={32} />
                 </div>
                 <h3 className="text-lg font-medium text-foreground mb-2">
-                  {editingId ? "Établissement modifié avec succès !" : "Établissement créé avec succès !"}
+                  {editingId
+                    ? "Établissement modifié avec succès !"
+                    : "Établissement créé avec succès !"}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {editingId ? "Les modifications ont été enregistrées." : "L'établissement a été ajouté à la base de données."}
+                  {editingId
+                    ? "Les modifications ont été enregistrées."
+                    : "L'établissement a été ajouté à la base de données."}
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto">
+              <form
+                onSubmit={handleSubmit}
+                className="p-4 sm:p-6 space-y-4 overflow-y-auto"
+              >
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Building2 size={16} className="text-primary" />
@@ -339,7 +442,9 @@ export default function EtablissementsPage() {
                     required
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     placeholder="Ex: Établissement Paris Centrale"
                     className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/40"
                   />
@@ -353,12 +458,16 @@ export default function EtablissementsPage() {
                   <select
                     required
                     value={formData.city}
-                    onChange={(e) => setFormData({...formData, city: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, city: e.target.value })
+                    }
                     className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                   >
                     <option value="">Sélectionnez une ville...</option>
-                    {TUNISIA_CITIES.map(city => (
-                      <option key={city} value={city}>{city}</option>
+                    {TUNISIA_CITIES.map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -366,7 +475,16 @@ export default function EtablissementsPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Users size={16} className="text-primary" />
-                    Utilisateurs assignés {editingId ? <span className="text-xs text-muted-foreground/70">(remplacer)</span> : <span className="text-xs text-muted-foreground/70">(obligatoire)</span>}
+                    Utilisateurs assignés{" "}
+                    {editingId ? (
+                      <span className="text-xs text-muted-foreground/70">
+                        (remplacer)
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/70">
+                        (obligatoire)
+                      </span>
+                    )}
                   </label>
 
                   <input
@@ -379,7 +497,9 @@ export default function EtablissementsPage() {
 
                   <div className="w-full bg-background border border-border rounded-xl p-3 max-h-56 overflow-auto space-y-2">
                     {filteredUsers.length === 0 ? (
-                      <div className="text-sm text-muted-foreground py-2">Aucun utilisateur trouvé.</div>
+                      <div className="text-sm text-muted-foreground py-2">
+                        Aucun utilisateur trouvé.
+                      </div>
                     ) : (
                       filteredUsers.map((u: any) => {
                         const id = (u._id || u.id) as string | undefined;
@@ -403,9 +523,12 @@ export default function EtablissementsPage() {
                               className="h-4 w-4 accent-[var(--primary)]"
                             />
                             <div className="min-w-0">
-                              <div className="text-sm font-medium text-foreground truncate">{label}</div>
+                              <div className="text-sm font-medium text-foreground truncate">
+                                {label}
+                              </div>
                               <div className="text-[11px] text-muted-foreground truncate">
-                                {u.email ? u.email : "—"}{u.role ? ` • ${u.role}` : ""}
+                                {u.email ? u.email : "—"}
+                                {u.role ? ` • ${u.role}` : ""}
                               </div>
                             </div>
                           </label>
@@ -429,12 +552,17 @@ export default function EtablissementsPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <MapPin size={16} className="text-primary" />
-                    Quartier / Adresse exacte <span className="text-xs text-muted-foreground/70">(optionnel)</span>
+                    Quartier / Adresse exacte{" "}
+                    <span className="text-xs text-muted-foreground/70">
+                      (optionnel)
+                    </span>
                   </label>
                   <input
                     type="text"
                     value={formData.address}
-                    onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, address: e.target.value })
+                    }
                     placeholder="Ex: Ennasr 2, Rue de la Paix"
                     className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/40"
                   />
@@ -443,12 +571,17 @@ export default function EtablissementsPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Phone size={16} className="text-primary" />
-                    Numéro de contact <span className="text-xs text-muted-foreground/70">(optionnel)</span>
+                    Numéro de contact{" "}
+                    <span className="text-xs text-muted-foreground/70">
+                      (optionnel)
+                    </span>
                   </label>
                   <input
                     type="text"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, phone: e.target.value })
+                    }
                     placeholder="Ex: +33 1 23 45 67 89"
                     className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/40"
                   />
@@ -468,9 +601,12 @@ export default function EtablissementsPage() {
                     className="bg-primary hover:opacity-90 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
                   >
                     {isSubmitting ? (
-                      <><Loader2 size={16} className="animate-spin" /> Création...</>
+                      <>
+                        <Loader2 size={16} className="animate-spin" />{" "}
+                        Création...
+                      </>
                     ) : (
-                      'Valider'
+                      "Valider"
                     )}
                   </button>
                 </div>

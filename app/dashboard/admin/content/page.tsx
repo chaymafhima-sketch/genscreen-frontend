@@ -209,24 +209,24 @@ export default function ContentPage() {
   };
 
   const getStatusBadge = (status?: string) => {
-    const currentStatus = status || "Actif"; 
+    const currentStatus = status || "desactive"; 
     switch (currentStatus) {
-      case "Actif":
+      case "active":
         return (
           <span className="flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <PlayCircle size={12} /> Actif
           </span>
         );
-      case "En attente":
+      case "desactive":
         return (
-          <span className="flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20">
-            <Clock size={12} /> En attente
+          <span className="flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+            <X size={12} /> Desactive
           </span>
         );
       default:
         return (
-          <span className="flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <PlayCircle size={12} /> Actif
+          <span className="flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20">
+            <Clock size={12} /> {currentStatus}
           </span>
         );
     }
@@ -428,8 +428,8 @@ export default function ContentPage() {
                 <div className="h-16 w-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mb-4 border border-emerald-500/20">
                   <UploadCloud size={32} />
                 </div>
-                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">Contenu créé !</h3>
-                <p className="text-sm text-slate-400">Ajouté à la bibliothèque.</p>
+                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">Contenu cree !</h3>
+                <p className="text-sm text-slate-400">Ajoute a la bibliothèque.</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="p-6 space-y-5">
@@ -516,7 +516,7 @@ export default function ContentPage() {
                   <button type="submit" disabled={isSubmitting || (isFileType && !editingId && !selectedFile)}
                     className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-500/20 active:scale-95 flex items-center gap-2"
                   >
-                    {isSubmitting ? (<><Loader2 size={16} className="animate-spin" /> Création...</>) : (editingId ? "Mettre à jour" : "Créer le contenu")}
+                    {isSubmitting ? (<><Loader2 size={16} className="animate-spin" /> Creation...</>) : (editingId ? "Mettre a jour" : "Creer le contenu")}
                   </button>
                 </div>
               </form>
@@ -558,8 +558,8 @@ export default function ContentPage() {
                         className="h-4 w-4"
                       />
                       <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-200">{screen.name || "Écran"}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{screen.agency?.name || "Sans �tablissement"}</p>
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-200">{screen.name || "Ecran"}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{screen.etablissement?.name || "Sans établissement"}</p>
                       </div>
                     </label>
                   );

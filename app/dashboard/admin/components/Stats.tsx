@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 export default function Stats() {
-  const [data, setData] = useState({ contents: 0, etablissements: 0, users: 0, screens: 0 });
+  const [data, setData] = useState({ contents: 0, établissements: 0, users: 0, screens: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function Stats() {
 
         setData({
           contents: contents.length,
-          etablissements: etablissements.length,
+          établissements: etablissements.length,
           users: users.filter((u: any) => u.role === "manager").length,
           screens: screens.length,
         });
@@ -50,7 +50,7 @@ export default function Stats() {
   const stats = [
     {
       title: "Établissements Partenaires",
-      value: loading ? "..." : data.etablissements.toString(),
+      value: loading ? "..." : data.établissements.toString(),
       trend: "Réseau",
       trendUp: true,
       icon: <Building2 size={20} />,
