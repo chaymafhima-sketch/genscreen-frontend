@@ -313,10 +313,10 @@ export default function managerScreensPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h2 className="text-3xl font-bold text-foreground tracking-tight">
-            Supervision de Mes Ecrans
+            Supervision de Mes Écrans
           </h2>
           <p className="text-muted-foreground mt-2">
-            Suivez l'etat de votre parc d'affichage local.
+            Suivez l'état de votre parc d'affichage local.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -541,7 +541,7 @@ export default function managerScreensPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
-                      placeholder="Ex: Ecran Hall A"
+                      placeholder="Ex: Écran Hall A"
                       className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
                     />
                   </div>

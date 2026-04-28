@@ -16,10 +16,13 @@ import {
   Loader2,
   AlertCircle,
   Globe,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function ManagerDashboard() {
+  const router = useRouter();
   const [userData, setUserData] = useState<{
     name?: string;
     fullname?: string;
@@ -86,6 +89,25 @@ export default function ManagerDashboard() {
             </p>
           </div>
         </div>
+
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            const q = (e.currentTarget.elements.namedItem('q') as HTMLInputElement).value;
+            if (q.trim()) router.push(`/dashboard/search?q=${encodeURIComponent(q)}`);
+          }}
+          className="relative w-full max-w-md group"
+        >
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors">
+            <Search size={18} />
+          </div>
+          <input
+            name="q"
+            type="text"
+            placeholder="Rechercher établissements, écrans, contenus..."
+            className="w-full bg-card border border-border text-foreground text-sm rounded-2xl pl-12 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all placeholder:text-muted-foreground/40 shadow-sm"
+          />
+        </form>
       </div>
 
       {/* Premium Stats Grid */}

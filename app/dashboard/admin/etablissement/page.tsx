@@ -280,24 +280,11 @@ export default function EtablissementsPage() {
             <table className="w-full text-left text-sm text-muted-foreground">
               <thead className="bg-muted/50 text-xs uppercase font-medium text-muted-foreground border-b border-border transition-colors">
                 <tr>
-                  <th scope="col" className="px-6 py-4">
-                    Ville
-                  </th>
-                  <th scope="col" className="px-6 py-4">
-                    Quartier / Adresse
-                  </th>
-                  <th scope="col" className="px-6 py-4">
-                    Contact
-                  </th>
-                  <th scope="col" className="px-6 py-4">
-                    Téléphone
-                  </th>
-                  <th scope="col" className="px-6 py-4">
-                    Utilisateurs assignés
-                  </th>
-                  <th scope="col" className="px-6 py-4 text-right">
-                    Actions
-                  </th>
+                  <th scope="col" className="px-6 py-4">Nom</th>
+                  <th scope="col" className="px-6 py-4">Ville</th>
+                  <th scope="col" className="px-6 py-4 text-center">Utilisateurs assignés</th>
+                  <th scope="col" className="px-6 py-4">Numéro de contact</th>
+                  <th scope="col" className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40 transition-colors">
@@ -318,57 +305,59 @@ export default function EtablissementsPage() {
                       key={etablissement._id || etablissement.id}
                       className="hover:bg-muted/30 transition-colors group"
                     >
-                      <td className="px-6 py-4 font-medium text-foreground flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                          <Building2 size={18} />
+                      <td className="px-6 py-4 font-medium text-foreground">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                            <Building2 size={18} />
+                          </div>
+                          <span className="truncate max-w-[200px]">{etablissement.name}</span>
                         </div>
-                        {etablissement.name}
                       </td>
                       <td className="px-6 py-4 font-bold text-primary">
                         {etablissement.city || "—"}
                       </td>
-                      <td className="px-6 py-4 text-xs">
-                        {etablissement.address || "—"}
-                      </td>
-                      <td className="px-6 py-4">{etablissement.phone || "—"}</td>
                       <td className="px-6 py-4">
                         {assignedUsers.length === 0 ? (
-                          <span className="text-xs text-muted-foreground">
-                            Aucun utilisateur
-                          </span>
+                          <span className="text-xs text-muted-foreground">Aucun utilisateur</span>
                         ) : (
-                          <div className="flex flex-wrap gap-1.5">
-                            {assignedUsers.slice(0, 3).map((u: any) => (
+                          <div className="flex flex-wrap gap-1.5 justify-center">
+                            {assignedUsers.slice(0, 2).map((u: any) => (
                               <span
                                 key={u._id || u.id}
-                                className="px-2 py-1 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20"
+                                title={u.fullname || u.name || u.email}
+                                className="px-2 py-1 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20 truncate max-w-[120px]"
                               >
                                 {u.fullname || u.name || u.email || "User"}
                               </span>
                             ))}
-                            {assignedUsers.length > 3 ? (
+                            {assignedUsers.length > 2 ? (
                               <span className="px-2 py-1 rounded-full text-[10px] font-semibold bg-muted text-muted-foreground border border-border">
-                                +{assignedUsers.length - 3}
+                                +{assignedUsers.length - 2}
                               </span>
                             ) : null}
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-right space-x-2 flex items-center justify-end">
-                        <button
-                          onClick={() => openEditModal(etablissement)}
-                          className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors border border-primary/20"
-                          title="Modifier"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(etablissement._id || etablissement.id)}
-                          className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors border border-destructive/20"
-                          title="Supprimer"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                      <td className="px-6 py-4 font-medium">
+                        {etablissement.phone || "—"}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => openEditModal(etablissement)}
+                            className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors border border-primary/20"
+                            title="Modifier"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(etablissement._id || etablissement.id)}
+                            className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors border border-destructive/20"
+                            title="Supprimer"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -379,7 +368,7 @@ export default function EtablissementsPage() {
         </div>
       </div>
 
-      {/* Modal - Nouvelle/Modifier �tablissement */}
+      {/* Modal - Nouvelle/Modifier établissement */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
           <div

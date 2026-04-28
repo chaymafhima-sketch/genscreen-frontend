@@ -507,6 +507,41 @@ export default function managerContentPage() {
                 ))
             )}
           </div>
+          {/* Section sélection écrans */}
+        <div className="pt-4 border-t border-border space-y-2">
+          <label className="text-sm font-bold text-foreground">
+            Sélectionner un écran
+          </label>
+          {loading ? (
+            <p className="text-muted-foreground text-sm">Chargement...</p>
+          ) : screens.length === 0 ? (
+            <p className="text-muted-foreground text-sm">Aucun écran disponible.</p>
+          ) : (
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {screens.map((screen) => (
+                <div
+                  key={screen._id || screen.id}
+                  onClick={() => handleToggleScreen(screen._id || screen.id)}
+                  className={`p-3 rounded-xl cursor-pointer border flex items-center gap-3 transition-all ${
+                    selectedScreens.includes(screen._id || screen.id)
+                      ? "bg-primary/10 border-primary/50"
+                      : "bg-background border-border hover:border-primary/30"
+                  }`}
+                >
+                  <MonitorSmartphone size={16} className="text-muted-foreground" />
+                  <span className="text-sm font-medium text-foreground">
+                    {screen.name || screen._id}
+                  </span>
+                  <div className={`ml-auto h-4 w-4 rounded-full border-2 ${
+                    selectedScreens.includes(screen._id || screen.id)
+                      ? "bg-primary border-primary"
+                      : "border-border"
+                  }`} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
           <div className="pt-4 border-t border-border space-y-4">
             <div className="space-y-2">
@@ -533,9 +568,7 @@ export default function managerContentPage() {
               disabled={
                 isDiffusing ||
                 selectedScreens.length === 0 ||
-                !selectedContentId ||
-                !duration ||
-                duration <= 0
+                !duration || duration <= 0
               }
               className="w-full bg-primary hover:opacity-90 disabled:opacity-50 disabled:bg-muted text-primary-foreground font-black uppercase tracking-widest py-5 rounded-2xl transition-all shadow-[0_10px_30px_rgba(var(--primary),0.3)] active:scale-95 flex items-center justify-center gap-3"
             >

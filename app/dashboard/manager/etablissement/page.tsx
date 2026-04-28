@@ -68,7 +68,7 @@ export default function manageretablissementsPage() {
   const handleDelete = async (id: string) => {
     if (
       !window.confirm(
-        "Êtes-vous sûr de vouloir supprimer cette �tablissement ?",
+        "Êtes-vous sûr de vouloir supprimer cette établissement ?",
       )
     )
       return;
@@ -85,16 +85,16 @@ export default function manageretablissementsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "warning",
-          action: "Suppression �tablissement",
+          action: "Suppression établissement",
           source: "Manager",
           user: user.name || user.email || "manager",
-          details: `Suppression définitive d'une �tablissement locale.`,
+          details: `Suppression définitive d'une établissement locale.`,
         }),
       });
 
       fetchMyetablissements();
     } catch (err: any) {
-      alert(err.message || "Impossible de supprimer cette �tablissement");
+      alert(err.message || "Impossible de supprimer cette établissement");
     }
   };
 
@@ -130,10 +130,10 @@ export default function manageretablissementsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "info",
-          action: "Modification �tablissement",
+          action: "Modification établissement",
           source: "Manager",
           user: user.name || user.email || "manager",
-          details: `Mise à jour de l'�tablissement "${formData.name}"`,
+          details: `Mise à jour de l'établissement "${formData.name}"`,
         }),
       });
 
@@ -160,15 +160,15 @@ export default function manageretablissementsPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h2 className="text-3xl font-bold text-foreground tracking-tight">
-            Gestion de Mes Etablissements
+            Gestion de Mes Établissements
           </h2>
           <p className="text-muted-foreground mt-2">
-            Gerez les informations et les ressources de vos etablissements.
+            Gérez les informations et les ressources de vos établissements.
           </p>
         </div>
         <div className="flex bg-muted p-1.5 rounded-2xl border border-border items-center gap-1">
           <div className="px-5 py-2 text-xs font-black text-primary uppercase tracking-widest border-border">
-            {filteredetablissements.length} Etablissements
+            {filteredetablissements.length} Établissements
           </div>
           <button
             onClick={fetchMyetablissements}
@@ -215,7 +215,7 @@ export default function manageretablissementsPage() {
                 <thead>
                   <tr className="bg-muted/50 border-b border-border">
                     <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                      Etablissement
+                      Établissement
                     </th>
                     <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                       Localisation
@@ -292,7 +292,7 @@ export default function manageretablissementsPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <h2 className="text-2xl font-bold text-foreground tracking-tight">
-                    Modifier l'Etablissement
+                    Modifier l'Établissement
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
                     Mettez à jour les coordonnées de votre établissement.
@@ -313,17 +313,17 @@ export default function manageretablissementsPage() {
                   <CheckCircle2 size={40} />
                 </div>
                 <h3 className="text-xl font-bold text-foreground mb-2">
-                  Etablissement modifie avec succès !
+                  Établissement modifié avec succès !
                 </h3>
                 <p className="text-muted-foreground">
-                  Les informations de l'Etablissement ont été actualisées.
+                  Les informations de l'établissement ont été actualisées.
                 </p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="p-8 space-y-6">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    Nom de l'Etablissement
+                    Nom de l'Établissement
                   </label>
                   <input
                     required
@@ -331,7 +331,7 @@ export default function manageretablissementsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    placeholder="Ex: Etablissement Centrale"
+                    placeholder="Ex: Établissement Centrale"
                     className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
                   />
                 </div>
