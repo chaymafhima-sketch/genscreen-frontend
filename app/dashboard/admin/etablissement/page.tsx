@@ -48,7 +48,7 @@ export default function EtablissementsPage() {
       const res = await fetch("/api/backend/users", { cache: "no-store" });
       if (!res.ok) throw new Error("Erreur de récupération des utilisateurs");
       const data = await res.json();
-      setUsers(data || []);
+      setUsers((data || []).filter((u: any) => u.role === "manager"));
     } catch (err: any) {
       // Keep établissement screen usable even if users fetch fails
       console.error(err?.message || err);
