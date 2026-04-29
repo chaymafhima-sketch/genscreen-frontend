@@ -16,24 +16,22 @@ import {
 type LogType = 'error' | 'warning' | 'info' | 'success';
 
 interface ApiLog {
-  _id: string;
-  module: string;
-  event: string;
-  actorUserId: string | null;
-  actorRole: string;
-  targetId: string | null;
-  meta?: Record<string, any>;
-  createdAt: string;
-}
+  _id?: string;
+  id?: string;
+  type?: LogType;
+  action?: string;
+  source?: string;
+  user?: string;
+  details?: string;
+  timestamp?: string;
 
-interface ApiLogsResponse {
-  items: ApiLog[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  module?: string;
+  event?: string;
+  actorUserId?: string | null;
+  actorRole?: string;
+  targetId?: string | null;
+  meta?: Record<string, any>;
+  createdAt?: string;
 }
 
 export default function LogsPage() {
@@ -65,11 +63,16 @@ export default function LogsPage() {
     try {
       const res = await fetch(`/api/backend/logs?page=${requestedPage}&limit=${pagination.limit}`, { cache: "no-store" });
       if (res.ok) {
-        const data = await res.json() as ApiLogsResponse;
-        setLogs(data.items || []);
-        if (data.pagination) {
-          setPagination(data.pagination);
-          setPage(data.pagination.page);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setLogs(data);
+          setPagination({ page: 1, limit: 100, total: data.length, totalPages: 1 });
+        } else if (data && data.items) {
+          setLogs(data.items || []);
+          if (data.pagination) {
+            setPagination(data.pagination);
+            setPage(data.pagination.page);
+          }
         }
       }
     } catch (err) {
@@ -129,9 +132,9 @@ export default function LogsPage() {
   };
 
   const stats = {
-    total: pagination.total,
-    errors: logs.filter(l => eventToType(l.event) === 'error').length,
-    warnings: logs.filter(l => eventToType(l.event) === 'warning').length,
+    total: logs.length,
+    errors: logs.filter(l => (l.type || eventToType(l.action || l.event || '')) === 'error').length,
+    warnings: logs.filter(l => (l.type || eventToType(l.action || l.event || '')) === 'warning').length,
   };
 
   return (
@@ -190,13 +193,18 @@ export default function LogsPage() {
             <tbody className="divide-y divide-border/40 font-mono text-[13px]">
               {filteredLogs.length > 0 ? (
                 filteredLogs.map((log) => {
-                  const type = eventToType(log.event);
+                  const type = log.type || eventToType(log.action || log.event || '');
                   const actorName =
+                    log.user || 
                     (log.actorUserId && usersMap[log.actorUserId]) ||
                     (log.actorRole ? `${log.actorRole.toUpperCase()}` : "Système");
-                  const details = log.meta ? JSON.stringify(log.meta) : "—";
+                  const details = log.details || (log.meta ? JSON.stringify(log.meta) : "—");
+                  const eventName = log.action || log.event || "Événement inconnu";
+                  const moduleName = log.source || log.module || "Système";
+                  const dateString = log.timestamp || log.createdAt || new Date().toISOString();
+                  
                   return (
-                  <tr key={log._id} className="hover:bg-muted/30 transition-colors group">
+                  <tr key={log._id || log.id || Math.random().toString()} className="hover:bg-muted/30 transition-colors group">
                     <td className="p-4 px-6">
                       <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold tracking-tight w-fit ${getStatusColor(type)}`}>
                         {getStatusIcon(type)}
@@ -205,13 +213,13 @@ export default function LogsPage() {
                     </td>
                     <td className="p-4 px-6">
                       <div className="flex flex-col">
-                        <span className="text-foreground font-bold tracking-tight">{formatEvent(log.event)}</span>
+                        <span className="text-foreground font-bold tracking-tight">{formatEvent(eventName)}</span>
                         <span className="text-[11px] text-muted-foreground truncate max-w-xs">{details}</span>
                       </div>
                     </td>
                     <td className="p-4 px-6">
                       <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[11px] font-medium border border-border">
-                        {log.module}
+                        {moduleName}
                       </span>
                     </td>
                     <td className="p-4 px-6">
@@ -224,8 +232,8 @@ export default function LogsPage() {
                     </td>
                     <td className="p-4 px-6 text-right whitespace-nowrap">
                       <div className="flex flex-col items-end">
-                        <span className="text-muted-foreground font-medium">{new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        <span className="text-[10px] text-muted-foreground/60">{new Date(log.createdAt).toLocaleDateString()}</span>
+                        <span className="text-muted-foreground font-medium">{new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="text-[10px] text-muted-foreground/60">{new Date(dateString).toLocaleDateString()}</span>
                       </div>
                     </td>
                   </tr>

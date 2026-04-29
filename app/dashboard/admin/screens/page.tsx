@@ -38,12 +38,14 @@ export default function ScreensPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Form state
   const [formData, setFormData] = useState({ name: '', etablissementId: '', location: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [isContentModalOpen, setIsContentModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [screenToDelete, setScreenToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchScreens = async () => {
     try {
@@ -106,14 +108,24 @@ export default function ScreensPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet écran ?")) return;
+  const handleDeleteClick = (id: string) => {
+    setScreenToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!screenToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/backend/screens/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/backend/screens/${screenToDelete}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
       fetchScreens();
+      setIsDeleteModalOpen(false);
+      setScreenToDelete(null);
     } catch (err: any) {
       alert(err.message || "Impossible de supprimer cet écran");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -383,7 +395,7 @@ export default function ScreensPage() {
                    <button onClick={() => openEditModal(screen)} className="p-1.5 bg-primary/80 backdrop-blur-md rounded-lg border border-primary/30 text-white hover:bg-primary transition-colors" title="Modifier">
                       <Edit2 size={16} />
                    </button>
-                   <button onClick={() => handleDelete(screen._id || screen.id)} className="p-1.5 bg-destructive/80 backdrop-blur-md rounded-lg border border-destructive/30 text-white hover:bg-destructive transition-colors" title="Supprimer">
+                   <button onClick={() => handleDeleteClick(screen._id || screen.id)} className="p-1.5 bg-destructive/80 backdrop-blur-md rounded-lg border border-destructive/30 text-white hover:bg-destructive transition-colors" title="Supprimer">
                       <Trash2 size={16} />
                    </button>
                 </div>
@@ -775,6 +787,53 @@ export default function ScreensPage() {
                 {isAssigningContent ? <Loader2 size={16} className="animate-spin" /> : null}
                 Enregistrer Playlist
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal de suppression */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/60 backdrop-blur-md"
+            onClick={() => !isDeleting && setIsDeleteModalOpen(false)}
+          />
+          <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center text-destructive">
+                <AlertCircle size={24} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-foreground">
+                  Supprimer l'écran ?
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                 Cette action supprimera définitivement cet écran et ses données.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 w-full pt-4">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="flex-1 bg-destructive hover:opacity-90 text-destructive-foreground px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-destructive/20 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Suppression...
+                    </>
+                  ) : (
+                    "Supprimer"
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

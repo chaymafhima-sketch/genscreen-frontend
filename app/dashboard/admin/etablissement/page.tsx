@@ -24,6 +24,9 @@ export default function EtablissementsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [etablissementToDelete, setEtablissementToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     address: "",
@@ -73,19 +76,26 @@ export default function EtablissementsPage() {
     fetchUsers();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (
-      !window.confirm("Êtes-vous sûr de vouloir supprimer ce établissement ?")
-    )
-      return;
+  const handleDeleteClick = (id: string) => {
+    setEtablissementToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!etablissementToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/backend/etablissements/${id}`, {
+      const res = await fetch(`/api/backend/etablissements/${etablissementToDelete}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
       fetchetablissements();
+      setIsDeleteModalOpen(false);
+      setEtablissementToDelete(null);
     } catch (err: any) {
-      alert(err.message || "Impossible de supprimer ce établissement");
+      alert(err.message || "Impossible de supprimer cet établissement");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -157,8 +167,6 @@ export default function EtablissementsPage() {
           body: JSON.stringify(formData),
         });
       } else {
-        if (!userIds.length)
-          throw new Error("Veuillez sélectionner au moins un utilisateur");
         res = await fetch("/api/backend/etablissements", {
           method: "POST",
           headers: {
@@ -351,7 +359,7 @@ export default function EtablissementsPage() {
                             <Edit2 size={16} />
                           </button>
                           <button
-                            onClick={() => handleDelete(etablissement._id || etablissement.id)}
+                            onClick={() => handleDeleteClick(etablissement._id || etablissement.id)}
                             className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors border border-destructive/20"
                             title="Supprimer"
                           >
@@ -471,7 +479,7 @@ export default function EtablissementsPage() {
                       </span>
                     ) : (
                       <span className="text-xs text-muted-foreground/70">
-                        (obligatoire)
+                        (optionnel)
                       </span>
                     )}
                   </label>
@@ -601,6 +609,53 @@ export default function EtablissementsPage() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+      {/* Modal de suppression */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/60 backdrop-blur-md"
+            onClick={() => !isDeleting && setIsDeleteModalOpen(false)}
+          />
+          <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center text-destructive">
+                <AlertCircle size={24} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-foreground">
+                  Supprimer l'établissement ?
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Cette action supprimera définitivement cet établissement et ses données.          
+                </p>
+              </div>
+              <div className="flex items-center gap-3 w-full pt-4">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="flex-1 bg-destructive hover:opacity-90 text-destructive-foreground px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-destructive/20 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Suppression...
+                    </>
+                  ) : (
+                    "Supprimer"
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

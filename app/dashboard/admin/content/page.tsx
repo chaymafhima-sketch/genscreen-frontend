@@ -19,6 +19,9 @@ export default function ContentPage() {
   const [selectedScreenIds, setSelectedScreenIds] = useState<string[]>([]);
   const [assigningContentId, setAssigningContentId] = useState<string | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [contentToDelete, setContentToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -123,14 +126,24 @@ export default function ContentPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce contenu ?")) return;
+  const handleDeleteClick = (id: string) => {
+    setContentToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!contentToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/backend/content/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/backend/content/${contentToDelete}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
       fetchContents();
+      setIsDeleteModalOpen(false);
+      setContentToDelete(null);
     } catch (err: any) {
       alert(err.message || "Impossible de supprimer ce contenu");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -220,7 +233,7 @@ export default function ContentPage() {
       case "desactive":
         return (
           <span className="flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
-            <X size={12} /> Desactive
+            <X size={12} /> désactivé
           </span>
         );
       default:
@@ -396,7 +409,7 @@ export default function ContentPage() {
                      <button onClick={() => openEditModal(item)} className="p-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors border border-blue-500/20" title="Modifier">
                         <Edit2 size={16} />
                      </button>
-                     <button onClick={() => handleDelete(item._id || item.id)} className="p-1.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/20" title="Supprimer">
+                     <button onClick={() => handleDeleteClick(item._id || item.id)} className="p-1.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/20" title="Supprimer">
                         <Trash2 size={16} />
                      </button>
                     </td>
@@ -574,6 +587,53 @@ export default function ContentPage() {
                 {isAssigning ? <Loader2 size={16} className="animate-spin" /> : null}
                 Enregistrer
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal de suppression */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-md"
+            onClick={() => !isDeleting && setIsDeleteModalOpen(false)}
+          />
+          <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
+                <AlertCircle size={24} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Supprimer le contenu ?
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Cette action supprimera définitivement ce contenu et ses données.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 w-full pt-4">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="flex-1 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-red-500/20 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Suppression...
+                    </>
+                  ) : (
+                    "Supprimer"
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
