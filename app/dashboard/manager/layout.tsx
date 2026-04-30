@@ -30,7 +30,6 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
   }, [session]);
 
   const managerLinks: SidebarLinkType[] = [
-    { href: "/dashboard/manager", label: "Vue d'ensemble", icon: <LayoutDashboard size={20} /> },
     { href: "/dashboard/manager/etablissement", label: "Mes Etablissements", icon: <Building2 size={20} /> },
     { href: "/dashboard/manager/screens", label: "Mes Ecrans", icon: <MonitorSmartphone size={20} /> },
     ...(userData.canDiffuse ? [{ href: "/dashboard/manager/content", label: "Mes Contenus", icon: <FileVideo size={20} /> }] : []),

@@ -72,7 +72,7 @@ function SearchContent() {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-white flex items-center gap-2">
               <Building2 size={20} className="text-indigo-400" />
-              �tablissements ({results.etablissements.length})
+              Établissements ({results.etablissements.length})
             </h2>
             <div className="space-y-3">
               {results.etablissements.length > 0 ? results.etablissements.map((etablissement) => (
@@ -92,7 +92,7 @@ function SearchContent() {
                 </Link>
               )) : (
                 <div className="p-8 bg-slate-900/20 rounded-xl border border-dashed border-slate-800 text-center text-slate-500 text-sm">
-                  Aucune �tablissement trouvée
+                  Aucun Établissement trouvé
                 </div>
               )}
             </div>

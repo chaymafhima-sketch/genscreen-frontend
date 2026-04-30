@@ -73,13 +73,13 @@ function SearchContent() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <section className="soft-card p-5">
-            <h2 className="text-base font-bold text-foreground flex items-center gap-2 mb-4"><Building2 size={18} className="text-primary" /> �tablissements ({results.etablissements.length})</h2>
+            <h2 className="text-base font-bold text-foreground flex items-center gap-2 mb-4"><Building2 size={18} className="text-primary" /> Établissements ({results.etablissements.length})</h2>
             <div className="space-y-2">
               {results.etablissements.length ? results.etablissements.map((a) => (
                 <Link key={a._id || a.id} href="/dashboard/admin/etablissements" className="block p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors">
                   <div className="flex items-center justify-between"><p className="text-sm font-medium text-foreground">{a.name}</p><ArrowRight size={14} className="text-muted-foreground" /></div>
                 </Link>
-              )) : <p className="text-xs text-muted-foreground">Aucune �tablissement trouvée.</p>}
+              )) : <p className="text-xs text-muted-foreground">Aucun Établissement trouvé.</p>}
             </div>
           </section>
 

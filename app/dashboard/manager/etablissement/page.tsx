@@ -223,9 +223,6 @@ export default function manageretablissementsPage() {
                     <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
                       Contact
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                      Statut
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -262,12 +259,6 @@ export default function manageretablissementsPage() {
                         <div className="flex items-center gap-1.5 text-muted-foreground text-xs font-medium">
                           <Phone size={14} className="text-primary/60" />{" "}
                           {etablissement.phone || "—"}
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          {etablissement.status || "Opérationnel"}
                         </div>
                       </td>
                     </tr>

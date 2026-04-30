@@ -120,7 +120,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.user = user;
+        token.user = user as unknown as { role?: string; [key: string]: unknown };
         token.accessToken = (user as { accessToken?: string }).accessToken;
         token.refreshToken = (user as { refreshToken?: string }).refreshToken;
         token.accessTokenExpiresAt = (user as { accessTokenExpiresAt?: number }).accessTokenExpiresAt;
