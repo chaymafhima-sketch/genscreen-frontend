@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { User, Mail, Shield, MapPin, Save, Loader2 } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 export default function AdminProfilePage() {
   const [profile, setProfile] = useState<any>(null);
@@ -41,9 +42,9 @@ export default function AdminProfilePage() {
       });
       if (!res.ok) throw new Error("Impossible de mettre à jour le profil");
       await fetchProfile();
-      alert("Profil mis à jour.");
+      toast.success("Profil mis à jour.");
     } catch (err: any) {
-      alert(err?.message || "Erreur lors de la mise à jour.");
+      toast.error(err?.message || "Erreur lors de la mise à jour.");
     } finally {
       setSaving(false);
     }

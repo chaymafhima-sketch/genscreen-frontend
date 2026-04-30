@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { FileVideo, Search, Loader2, AlertCircle, PlayCircle, Clock, Video, Image as ImageIcon, Plus, X, UploadCloud, FileText, Edit2, Trash2, Globe, MessageSquare, RefreshCcw } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function ContentPage() {
   const [contents, setContents] = useState<any[]>([]);
@@ -116,11 +117,11 @@ export default function ContentPage() {
       ]);
 
       await fetchContentAssignments();
-      alert("TVs assignées mises à jour.");
+      toast.success("TVs assignées mises à jour.");
       setAssigningContentId(null);
       setSelectedScreenIds([]);
     } catch (err: any) {
-      alert(err?.message || "Erreur lors de l'assignation.");
+      toast.error(err?.message || "Erreur lors de l'assignation.");
     } finally {
       setIsAssigning(false);
     }
@@ -141,7 +142,7 @@ export default function ContentPage() {
       setIsDeleteModalOpen(false);
       setContentToDelete(null);
     } catch (err: any) {
-      alert(err.message || "Impossible de supprimer ce contenu");
+      toast.error(err.message || "Impossible de supprimer ce contenu");
     } finally {
       setIsDeleting(false);
     }

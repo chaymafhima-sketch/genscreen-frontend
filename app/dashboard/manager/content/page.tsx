@@ -20,6 +20,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function managerContentPage() {
   const [screens, setScreens] = useState<any[]>([]);
@@ -55,6 +56,11 @@ export default function managerContentPage() {
   });
   const [createFile, setCreateFile] = useState<File | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+
+  // Modal de suppression
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [contentToDelete, setContentToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -172,7 +178,7 @@ export default function managerContentPage() {
       fetchContents();
     } catch (err) {
       console.error(err);
-      alert("Impossible de mettre à jour le contenu");
+      toast.error("Impossible de mettre à jour le contenu");
     } finally {
       setIsUpdating(false);
     }
@@ -193,11 +199,11 @@ export default function managerContentPage() {
   const handleDiffusion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedScreens.length === 0 && selectedetablissementIds.length === 0) {
-      alert("Veuillez sélectionner au moins un écran.");
+      toast.error("Veuillez sélectionner au moins un écran.");
       return;
     }
     if (!selectedContentId) {
-      alert("Veuillez sélectionner un contenu à diffuser.");
+      toast.error("Veuillez sélectionner un contenu à diffuser.");
       return;
     }
 
@@ -258,7 +264,7 @@ export default function managerContentPage() {
       }, 3000);
     } catch (err) {
       console.error(err);
-      alert("Une erreur est survenue lors de la diffusion.");
+      toast.error("Une erreur est survenue lors de la diffusion.");
     } finally {
       setIsDiffusing(false);
     }
@@ -299,22 +305,32 @@ export default function managerContentPage() {
       setCreateFile(null);
       fetchContents();
     } catch (err: any) {
-      alert(err?.message || "Erreur lors de la création");
+      toast.error(err?.message || "Erreur lors de la création");
     } finally {
       setIsCreating(false);
     }
   };
 
-  const handleDeleteContent = async (contentId: string) => {
-    if (!window.confirm("Supprimer ce contenu ?")) return;
+  const handleDeleteClick = (contentId: string) => {
+    setContentToDelete(contentId);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!contentToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/backend/content/${contentId}`, {
+      const res = await fetch(`/api/backend/content/${contentToDelete}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Suppression impossible");
       fetchContents();
+      setIsDeleteModalOpen(false);
+      setContentToDelete(null);
     } catch (err: any) {
-      alert(err?.message || "Erreur lors de la suppression");
+      toast.error(err?.message || "Erreur lors de la suppression");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -432,7 +448,7 @@ export default function managerContentPage() {
                 .map((item) => (
                   <div
                     key={item._id || item.id}
-                    onClick={() => setSelectedContentId(item._id || item.id)}
+                    onClick={() => setSelectedContentId(prev => prev === (item._id || item.id) ? null : (item._id || item.id))}
                     className={`p-4 rounded-2xl cursor-pointer transition-all border flex items-center justify-between group ${
                       selectedContentId === (item._id || item.id)
                         ? "bg-primary/10 border-primary/50 shadow-md"
@@ -481,7 +497,7 @@ export default function managerContentPage() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteContent(item._id || item.id);
+                          handleDeleteClick(item._id || item.id);
                         }}
                         className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors border border-destructive/20 opacity-0 group-hover:opacity-100"
                         title="Supprimer"
@@ -778,6 +794,53 @@ export default function managerContentPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal de suppression */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/60 backdrop-blur-md"
+            onClick={() => !isDeleting && setIsDeleteModalOpen(false)}
+          />
+          <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center text-destructive">
+                <AlertCircle size={24} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-foreground">
+                  Supprimer le contenu ?
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Cette action supprimera définitivement ce contenu.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 w-full pt-4">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-destructive/20 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Suppression...
+                    </>
+                  ) : (
+                    "Supprimer"
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -18,6 +18,7 @@ import {
   Users,
 } from "lucide-react";
 import { TUNISIA_CITIES } from "@/app/lib/constants/tunisia-cities";
+import { toast } from "react-hot-toast";
 
 export default function EtablissementsPage() {
   const [etablissements, setEtablissements] = useState<any[]>([]);
@@ -93,7 +94,7 @@ export default function EtablissementsPage() {
       setIsDeleteModalOpen(false);
       setEtablissementToDelete(null);
     } catch (err: any) {
-      alert(err.message || "Impossible de supprimer cet établissement");
+      toast.error(err.message || "Impossible de supprimer cet établissement");
     } finally {
       setIsDeleting(false);
     }

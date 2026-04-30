@@ -20,6 +20,7 @@ import {
   RefreshCcw,
 } from "lucide-react";
 import { TUNISIA_CITIES } from "@/app/lib/constants/tunisia-cities";
+import { toast } from "react-hot-toast";
 
 export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
@@ -103,7 +104,7 @@ export default function UsersPage() {
         });
       }, 1500);
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -121,7 +122,7 @@ export default function UsersPage() {
       if (!res.ok) throw new Error("Erreur lors de la mise à jour");
       fetchData();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -142,7 +143,7 @@ export default function UsersPage() {
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
     } catch (err: any) {
-      alert(err.message || "Impossible de supprimer cet utilisateur");
+      toast.error(err.message || "Impossible de supprimer cet utilisateur");
     } finally {
       setIsDeleting(false);
     }

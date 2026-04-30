@@ -18,6 +18,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 export default function manageretablissementsPage() {
   const [etablissements, setEtablissements] = useState<any[]>([]);
@@ -36,6 +37,9 @@ export default function manageretablissementsPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [etablissementToDelete, setEtablissementToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchMyetablissements = async () => {
     try {
@@ -65,15 +69,16 @@ export default function manageretablissementsPage() {
     fetchMyetablissements();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (
-      !window.confirm(
-        "Êtes-vous sûr de vouloir supprimer cette établissement ?",
-      )
-    )
-      return;
+  const handleDeleteClick = (id: string) => {
+    setEtablissementToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!etablissementToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/backend/etablissements/${id}`, {
+      const res = await fetch(`/api/backend/etablissements/${etablissementToDelete}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
@@ -93,8 +98,12 @@ export default function manageretablissementsPage() {
       });
 
       fetchMyetablissements();
+      setIsDeleteModalOpen(false);
+      setEtablissementToDelete(null);
     } catch (err: any) {
-      alert(err.message || "Impossible de supprimer cette établissement");
+      toast.error(err.message || "Impossible de supprimer cette établissement");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -395,6 +404,53 @@ export default function manageretablissementsPage() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+      {/* Modal de suppression */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/60 backdrop-blur-md"
+            onClick={() => !isDeleting && setIsDeleteModalOpen(false)}
+          />
+          <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center text-destructive">
+                <AlertCircle size={24} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-foreground">
+                  Supprimer l'établissement ?
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Cette action est irréversible. L'établissement sera définitivement supprimé.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 w-full pt-4">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-destructive/20 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Suppression...
+                    </>
+                  ) : (
+                    "Supprimer"
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
