@@ -38,6 +38,7 @@ export default function UsersPage() {
     canDiffuse: false,
     address: "",
     city: "",
+    isActive: true,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -101,12 +102,32 @@ export default function UsersPage() {
           canDiffuse: false,
           address: "",
           city: "",
+          isActive: true,
         });
       }, 1500);
     } catch (err: any) {
       toast.error(err.message);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+
+  
+  const toggleActive = async (user: any) => {
+    try {
+      const res = await fetch(`/api/backend/users/${user._id || user.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isActive: !user.isActive }),
+      });
+      if (!res.ok) throw new Error("Erreur lors de la mise à jour du statut");
+      fetchData();
+      toast.success(user.isActive ? "Compte désactivé" : "Compte activé");
+    } catch (err: any) {
+      toast.error(err.message);
     }
   };
 
@@ -240,6 +261,9 @@ export default function UsersPage() {
                     Email
                   </th>
                   <th scope="col" className="px-6 py-4 text-center">
+                    Statut Compte
+                  </th>
+                  <th scope="col" className="px-6 py-4 text-center">
                     Autorisation Diffusion
                   </th>
                   <th scope="col" className="px-6 py-4 text-right">
@@ -269,6 +293,21 @@ export default function UsersPage() {
                       <td className="px-6 py-4">
                         <div className="flex justify-center">
                           <button
+                            onClick={() => toggleActive(user)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${
+                              user.isActive !== false
+                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
+                                : "bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20"
+                            }`}
+                          >
+                            <div className={`h-1.5 w-1.5 rounded-full ${user.isActive !== false ? "bg-emerald-500" : "bg-red-500"}`} />
+                            {user.isActive !== false ? "ACTIF" : "DÉSACTIVÉ"}
+                          </button>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex justify-center">
+                          <button
                             onClick={() => toggleDiffusion(user)}
                             className={`group relative flex items-center gap-3 px-6 py-2.5 rounded-2xl text-xs font-bold transition-all duration-300 border ${
                               user.canDiffuse
@@ -285,7 +324,7 @@ export default function UsersPage() {
                               </span>
                             ) : (
                               <span className="tracking-wide">
-                                DIFFUSION desactiveE
+                                DIFFUSION DÉSACTIVÉE
                               </span>
                             )}
                             <div
@@ -313,6 +352,7 @@ export default function UsersPage() {
                               canDiffuse: user.canDiffuse || false,
                               address: user.address || "",
                               city: user.city || "",
+                              isActive: user.isActive !== false,
                             });
                             setIsModalOpen(true);
                           }}
@@ -373,6 +413,7 @@ export default function UsersPage() {
                       canDiffuse: false,
                       address: "",
                       city: "",
+                      isActive: true,
                     });
                   }
                 }}
@@ -483,40 +524,42 @@ export default function UsersPage() {
 
 
                 <div className="space-y-4 pt-2">
-                  <div className="flex items-center justify-between p-4 bg-muted/50 border border-border rounded-2xl transition-all hover:border-primary/30 group">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`p-2 rounded-xl transition-colors ${formData.canDiffuse ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"}`}
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    {/* Diffusion Permission */}
+                    <div className="flex items-center justify-between p-3 bg-muted/50 border border-border rounded-2xl transition-all hover:border-primary/30 group">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-1.5 rounded-lg transition-colors ${formData.canDiffuse ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"}`}>
+                          {formData.canDiffuse ? <Shield size={16} /> : <ShieldOff size={16} />}
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-foreground tracking-tight">Diffusion</p>
+                          <p className="text-[8px] text-muted-foreground">Autoriser</p>
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => setFormData({ ...formData, canDiffuse: !formData.canDiffuse })}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${formData.canDiffuse ? "bg-primary" : "bg-muted-foreground/30"}`}
                       >
-                        {formData.canDiffuse ? (
-                          <Shield size={20} />
-                        ) : (
-                          <ShieldOff size={20} />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-foreground tracking-tight">
-                          Autorisation de diffusion
-                        </p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">
-                          Permettre au manager de diffuser du contenu
-                        </p>
-                      </div>
+                        <span className={`inline-block h-3 w-3 transform rounded-full bg-background transition-transform ${formData.canDiffuse ? "translate-x-5" : "translate-x-1"}`} />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFormData({
-                          ...formData,
-                          canDiffuse: !formData.canDiffuse,
-                        })
-                      }
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.canDiffuse ? "bg-primary" : "bg-muted-foreground/30"}`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${formData.canDiffuse ? "translate-x-6" : "translate-x-1"}`}
-                      />
-                    </button>
+
+                    {/* Account Active */}
+                    <div className="flex items-center justify-between p-3 bg-muted/50 border border-border rounded-2xl transition-all hover:border-primary/30 group">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-1.5 rounded-lg transition-colors ${formData.isActive ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}`}>
+                          {formData.isActive ? <UserCheck size={16} /> : <AlertCircle size={16} />}
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-foreground tracking-tight">État Compte</p>
+                          <p className="text-[8px] text-muted-foreground">{formData.isActive ? "Actif" : "Désactivé"}</p>
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${formData.isActive ? "bg-emerald-500" : "bg-red-500"}`}
+                      >
+                        <span className={`inline-block h-3 w-3 transform rounded-full bg-background transition-transform ${formData.isActive ? "translate-x-5" : "translate-x-1"}`} />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -600,3 +643,5 @@ export default function UsersPage() {
     </div>
   );
 }
+
+

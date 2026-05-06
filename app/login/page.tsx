@@ -40,18 +40,20 @@ export default function LoginPage() {
 
       if (result?.ok) {
         setSuccess("Connexion réussie ! Redirection...");
-        // Resolve the target route from authenticated session, then force navigation.
         const sessionRes = await fetch("/api/auth/session", { cache: "no-store" });
         const session = sessionRes.ok ? await sessionRes.json() : null;
         const role = session?.user?.role;
         const target = role === "admin" ? "/dashboard/admin" : "/dashboard/manager";
         setTimeout(() => {
           router.replace(target);
-          // Fallback hard redirect in case client navigation is interrupted.
           window.location.href = target;
         }, 900);
       } else {
-        setError("Email ou mot de passe incorrect.");
+        // Here we use the specific error message from the backend
+        const errorMessage = result?.error === "CredentialsSignin"
+          ? "Email ou mot de passe incorrect."
+          : (result?.error || "Une erreur est survenue lors de la connexion.");
+        setError(errorMessage);
       }
     } catch (err) {
       console.error("Erreur:", err);
@@ -120,7 +122,6 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-4">
-              {/* Email Input */}
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-500 group-focus-within:text-blue-500 transition-colors">
                   <Mail size={20} />
@@ -135,7 +136,6 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* Password Input */}
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-500 group-focus-within:text-blue-500 transition-colors">
                   <Lock size={20} />

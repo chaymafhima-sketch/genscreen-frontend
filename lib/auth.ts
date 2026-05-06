@@ -94,7 +94,13 @@ export const authOptions: NextAuthOptions = {
         });
 
         const data = (await res.json()) as BackendLoginResponse;
-        if (!res.ok || !data?.access_token) return null;
+        
+        if (!res.ok) {
+          // IMPORTANT: throwing Error here passes the message to result.error in the frontend
+          throw new Error(data.message || "Email ou mot de passe incorrect.");
+        }
+
+        if (!data?.access_token) return null;
 
         const expiresMs =
           typeof data.expires_in === "number" && data.expires_in > 0
@@ -143,4 +149,3 @@ export const authOptions: NextAuthOptions = {
   },
   pages: { signIn: "/login" },
 };
-
