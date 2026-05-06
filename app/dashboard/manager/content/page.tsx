@@ -19,6 +19,8 @@ import {
   Search,
   Plus,
   Trash2,
+  Music,
+  Sparkles,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -61,6 +63,7 @@ export default function managerContentPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [contentToDelete, setContentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [createVisualFile, setCreateVisualFile] = useState<File | null>(null);
 
   const fetchData = async () => {
     try {
@@ -293,6 +296,9 @@ export default function managerContentPage() {
         data.append("file", createFile);
         data.append("title", createFormData.title);
         data.append("type", createFormData.type);
+        if (createVisualFile) {
+          data.append("visual", createVisualFile);
+        }
         res = await fetch("/api/backend/content/upload", {
           method: "POST",
           body: data,
@@ -342,6 +348,8 @@ export default function managerContentPage() {
       return <Globe size={20} className="text-cyan-400" />;
     if (t?.includes("message"))
       return <MessageSquare size={20} className="text-amber-400" />;
+    if (t?.includes("audio"))
+      return <Music size={20} className="text-emerald-400" />;
     return <ImageIcon size={20} className="text-blue-400" />;
   };
 
@@ -463,10 +471,12 @@ export default function managerContentPage() {
                             alt="thumbnail"
                             className="object-cover w-full h-full"
                           />
+                        ) : item.videoUrl && item.type === 'audio' ? (
+                          <video src={`http://localhost:3001${item.videoUrl}`} className="object-cover w-full h-full opacity-60" />
                         ) : (
                           getMediaIcon(item.type)
                         )}
-                        {item.videoUrl && (
+                        {(item.videoUrl && item.type !== "audio") && (
                           <PlayCircle
                             size={16}
                             className="absolute text-white drop-shadow-md"
@@ -731,19 +741,48 @@ export default function managerContentPage() {
               >
                 <option value="image">Image</option>
                 <option value="video">Vidéo</option>
+                <option value="audio">Audio (MP3)</option>
                 <option value="url">URL</option>
                 <option value="message">Message</option>
               </select>
               {createFormData.type === "image" ||
-              createFormData.type === "video" ? (
-                <input
-                  type="file"
-                  accept={
-                    createFormData.type === "image" ? "image/*" : "video/*"
-                  }
-                  onChange={(e) => setCreateFile(e.target.files?.[0] || null)}
-                  className="w-full text-sm text-muted-foreground"
-                />
+              createFormData.type === "video" ||
+              createFormData.type === "audio" ? (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase">
+                      Fichier Principal {createFormData.type === "audio" ? "(MP3)" : ""}
+                    </label>
+                    <input
+                      type="file"
+                      accept={
+                        createFormData.type === "image"
+                          ? "image/*"
+                          : createFormData.type === "video"
+                            ? "video/*"
+                            : "audio/mpeg,audio/mp3"
+                      }
+                      onChange={(e) => setCreateFile(e.target.files?.[0] || null)}
+                      className="w-full text-sm text-muted-foreground"
+                    />
+                  </div>
+
+                  {createFormData.type === "audio" && (
+                    <div className="space-y-1 p-3 bg-muted/30 rounded-xl border border-border border-dashed">
+                      <label className="text-[10px] font-bold text-amber-500 uppercase flex items-center gap-1">
+                        <Sparkles size={10} /> Visuel (Optionnel)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        onChange={(e) =>
+                          setCreateVisualFile(e.target.files?.[0] || null)
+                        }
+                        className="w-full text-xs text-muted-foreground"
+                      />
+                    </div>
+                  )}
+                </div>
               ) : null}
               {createFormData.type === "url" ? (
                 <input

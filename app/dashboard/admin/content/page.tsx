@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { FileVideo, Search, Loader2, AlertCircle, PlayCircle, Clock, Video, Image as ImageIcon, Plus, X, UploadCloud, FileText, Edit2, Trash2, Globe, MessageSquare, RefreshCcw } from "lucide-react";
+import { FileVideo, Search, Loader2, AlertCircle, PlayCircle, Clock, Video, Image as ImageIcon, Plus, X, UploadCloud, FileText, Edit2, Trash2, Globe, MessageSquare, RefreshCcw, Music, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function ContentPage() {
@@ -23,8 +23,10 @@ export default function ContentPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [contentToDelete, setContentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedVisualFile, setSelectedVisualFile] = useState<File | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const visualInputRef = useRef<HTMLInputElement>(null);
 
   const fetchContents = async () => {
     try {
@@ -154,6 +156,12 @@ export default function ContentPage() {
     }
   };
 
+  const handleVisualChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedVisualFile(e.target.files[0]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -194,6 +202,9 @@ export default function ContentPage() {
         data.append('file', selectedFile);
         data.append('title', formData.title);
         data.append('type', formData.type);
+        if (selectedVisualFile) {
+          data.append('visual', selectedVisualFile);
+        }
         res = await fetch("/api/backend/content/upload", {
           method: "POST",
           body: data
@@ -212,6 +223,7 @@ export default function ContentPage() {
         setSubmitSuccess(false);
         setFormData({ title: '', type: 'image', url: '', message: '' });
         setSelectedFile(null);
+        setSelectedVisualFile(null);
         setEditingId(null);
       }, 1500);
     } catch (err: any) {
@@ -251,6 +263,7 @@ export default function ContentPage() {
     if (t?.includes("video")) return <Video size={20} className="text-purple-400" />;
     if (t?.includes("url")) return <Globe size={20} className="text-cyan-400" />;
     if (t?.includes("message")) return <MessageSquare size={20} className="text-amber-400" />;
+    if (t?.includes("audio")) return <Music size={20} className="text-emerald-400" />;
     return <ImageIcon size={20} className="text-blue-400" />;
   };
 
@@ -263,6 +276,7 @@ export default function ContentPage() {
     setEditingId(null);
     setFormData({ title: '', type: 'image', url: '', message: '' });
     setSelectedFile(null);
+    setSelectedVisualFile(null);
     setIsModalOpen(true);
   };
 
@@ -270,6 +284,7 @@ export default function ContentPage() {
     setEditingId(item._id || item.id);
     setFormData({ title: item.title || '', type: item.type || 'image', url: item.url || '', message: item.message || '' });
     setSelectedFile(null);
+    setSelectedVisualFile(null);
     setIsModalOpen(true);
   };
 
@@ -281,7 +296,7 @@ export default function ContentPage() {
     setSelectedScreenIds(preselected);
   };
 
-  const isFileType = formData.type.toLowerCase() === 'image' || formData.type.toLowerCase() === 'video';
+  const isFileType = formData.type.toLowerCase() === 'image' || formData.type.toLowerCase() === 'video' || formData.type.toLowerCase() === 'audio';
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
@@ -344,7 +359,6 @@ export default function ContentPage() {
                 <tr>
                   <th scope="col" className="px-6 py-4">Média</th>
                   <th scope="col" className="px-6 py-4">Statut</th>
-                  <th scope="col" className="px-6 py-4">Détails</th>
                   <th scope="col" className="px-6 py-4">TVs assignées</th>
                   <th scope="col" className="px-6 py-4">Créé le</th>
                   <th scope="col" className="px-6 py-4 text-right">Actions</th>
@@ -360,10 +374,12 @@ export default function ContentPage() {
                        <div className="h-12 w-16 bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center rounded-lg shadow-inner overflow-hidden relative transition-colors">
                          {item.imageBase64 ? (
                            <img src={`http://localhost:3001${item.imageBase64}`} alt="thumbnail" className="object-cover w-full h-full opacity-60" />
+                         ) : item.videoUrl && item.type === 'audio' ? (
+                           <video src={`http://localhost:3001${item.videoUrl}`} className="object-cover w-full h-full opacity-60" />
                          ) : (
                            getMediaIcon(item.type)
                          )}
-                         {item.videoUrl && <PlayCircle size={16} className="absolute text-white drop-shadow-md" />}
+                         {(item.videoUrl && item.type !== 'audio') && <PlayCircle size={16} className="absolute text-white drop-shadow-md" />}
                        </div>
                       <div className="flex flex-col flex-1">
                          <span>{item.title || "Contenu sans nom"}</span>
@@ -371,17 +387,6 @@ export default function ContentPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">{getStatusBadge(item.status)}</td>
-                    <td className="px-6 py-4 text-slate-500 max-w-[200px] truncate">
-                      {item.type === 'url' && item.url ? (
-                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline text-xs">{item.url}</a>
-                      ) : item.type === 'message' && item.message ? (
-                        <span className="text-xs italic text-amber-400">{item.message.length > 60 ? item.message.substring(0, 60) + '...' : item.message}</span>
-                      ) : item.imageBase64 ? (
-                        <span className="text-xs">{item.imageBase64}</span>
-                      ) : item.videoUrl ? (
-                        <span className="text-xs">{item.videoUrl}</span>
-                      ) : "—"}
-                    </td>
                     <td className="px-6 py-4">
                       {assignedScreens.length === 0 ? (
                         <span className="text-xs text-muted-foreground">Aucune TV</span>
@@ -442,7 +447,7 @@ export default function ContentPage() {
                 <div className="h-16 w-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mb-4 border border-emerald-500/20">
                   <UploadCloud size={32} />
                 </div>
-                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">Contenu cree !</h3>
+                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">Contenu crée !</h3>
                 <p className="text-sm text-slate-400">Ajoute a la bibliothèque.</p>
               </div>
             ) : (
@@ -465,18 +470,19 @@ export default function ContentPage() {
                   >
                     <option value="image">🖼️ Image (.jpg, .png)</option>
                     <option value="video">🎬 Vidéo (.mp4)</option>
+                    <option value="audio">🎵 Audio (.mp3)</option>
                     <option value="url">🌐 Site Web (URL)</option>
                     <option value="message">💬 Message texte</option>
                   </select>
                 </div>
 
-                {/* File upload for Image/Video */}
+                {/* File upload for Image/Video/Audio */}
                 {isFileType && (
                   <div onClick={() => fileInputRef.current?.click()}
                     className="border-2 border-dashed border-slate-300 dark:border-slate-800/60 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-slate-50 dark:hover:bg-slate-800/10 hover:border-blue-500/30 transition-colors cursor-pointer group"
                   >
                     <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange}
-                      accept={formData.type === 'image' ? 'image/*' : 'video/*'}
+                      accept={formData.type === 'image' ? 'image/*' : formData.type === 'video' ? 'video/*' : 'audio/mpeg,audio/mp3'}
                     />
                     {editingId && !selectedFile ? (
                       <div className="flex flex-col items-center">
@@ -486,17 +492,49 @@ export default function ContentPage() {
                       </div>
                     ) : selectedFile ? (
                       <div className="flex flex-col items-center animate-in fade-in zoom-in-95">
-                        <FileText size={32} className="text-blue-400 mb-2" />
+                        {formData.type === 'audio' ? <Music size={32} className="text-emerald-400 mb-2" /> : <FileText size={32} className="text-blue-400 mb-2" />}
                         <p className="text-sm text-slate-900 dark:text-slate-200 font-medium truncate max-w-[200px]">{selectedFile.name}</p>
                         <p className="text-xs text-slate-500 italic mt-1">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
                       </div>
                     ) : (
                       <>
                         <UploadCloud size={32} className="text-slate-500 group-hover:text-blue-400 transition-colors mb-3" />
-                        <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">Cliquez pour sélectionner un fichier</p>
-                        <p className="text-xs text-slate-500 mt-1">{formData.type === 'image' ? 'PNG, JPG, SVG' : 'MP4, WebM'} (Max 10MB)</p>
+                        <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">Cliquez pour sélectionner un fichier {formData.type === 'audio' ? 'audio' : ''}</p>
+                        <p className="text-xs text-slate-500 mt-1">{formData.type === 'image' ? 'PNG, JPG, SVG' : formData.type === 'video' ? 'MP4, WebM' : 'MP3'} (Max 10MB)</p>
                       </>
                     )}
+                  </div>
+                )}
+
+                {/* Visual for Audio */}
+                {formData.type === 'audio' && (
+                  <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <Sparkles size={14} className="text-amber-400" /> Visuel d'accompagnement (Optionnel)
+                    </label>
+                    <div onClick={() => visualInputRef.current?.click()}
+                      className="border-2 border-dashed border-slate-300 dark:border-slate-800/60 rounded-xl p-4 flex flex-col items-center justify-center text-center hover:bg-slate-50 dark:hover:bg-slate-800/10 hover:border-amber-500/30 transition-colors cursor-pointer group"
+                    >
+                      <input type="file" ref={visualInputRef} className="hidden" onChange={handleVisualChange}
+                        accept="image/*,video/*"
+                      />
+                      {selectedVisualFile ? (
+                        <div className="flex items-center gap-3 animate-in fade-in">
+                          <div className="h-10 w-10 bg-amber-500/10 rounded-lg flex items-center justify-center border border-amber-500/20">
+                            {selectedVisualFile.type.startsWith('image') ? <ImageIcon size={18} className="text-amber-500" /> : <Video size={18} className="text-amber-500" />}
+                          </div>
+                          <div className="text-left">
+                            <p className="text-xs font-medium text-slate-900 dark:text-slate-200 truncate max-w-[150px]">{selectedVisualFile.name}</p>
+                            <p className="text-[10px] text-slate-500">Prêt à l'upload</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3 text-slate-500">
+                          <Plus size={16} />
+                          <span className="text-xs font-medium">Ajouter une image ou animation</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
