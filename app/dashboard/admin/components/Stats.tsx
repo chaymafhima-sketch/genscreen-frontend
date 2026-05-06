@@ -10,8 +10,10 @@ import {
   ArrowUpRight,
   TrendingDown
 } from "lucide-react";
+import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
 export default function Stats() {
+  const { t } = useLanguage();
   const [data, setData] = useState({ contents: 0, établissements: 0, users: 0, screens: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -49,9 +51,9 @@ export default function Stats() {
 
   const stats = [
     {
-      title: "Établissements Partenaires",
+      title: t.dashboard.stats.partners,
       value: loading ? "..." : data.établissements.toString(),
-      trend: "Réseau",
+      trend: t.dashboard.stats.network,
       trendUp: true,
       icon: <Building2 size={20} />,
       color: "text-indigo-400",
@@ -60,9 +62,9 @@ export default function Stats() {
       glow: "shadow-indigo-500/10",
     },
     {
-      title: "Managers",
+      title: t.dashboard.stats.managers,
       value: loading ? "..." : data.users.toString(),
-      trend: "Utilisateurs",
+      trend: t.dashboard.stats.users,
       trendUp: true,
       icon: <UserCheck size={20} />,
       color: "text-amber-500",
@@ -71,9 +73,9 @@ export default function Stats() {
       glow: "shadow-amber-500/10",
     },
     {
-      title: "Médias Diffusés",
+      title: t.dashboard.stats.broadcasted,
       value: loading ? "..." : data.contents.toString(),
-      trend: "Bibliothèque",
+      trend: t.dashboard.stats.library,
       trendUp: true,
       icon: <FileVideo size={20} />,
       color: "text-emerald-400",
@@ -82,9 +84,9 @@ export default function Stats() {
       glow: "shadow-emerald-500/10",
     },
     {
-      title: "Écrans enregistrés",
+      title: t.dashboard.stats.registered_screens,
       value: loading ? "..." : data.screens.toString(),
-      trend: "Parc",
+      trend: t.dashboard.stats.fleet,
       trendUp: true,
       icon: <MonitorSmartphone size={20} />,
       color: "text-violet-500",
@@ -101,8 +103,6 @@ export default function Stats() {
           key={i}
           className="relative group soft-card p-6 transition-all duration-300 hover:-translate-y-1"
         >
-          {/* Subtle Top Glow */}
-          {/* Subtle Top Glow */}
           <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border/50 to-transparent opacity-0 group-hover:opacity-60 transition-opacity`} />
 
           <div className="flex justify-between items-start mb-6">
@@ -121,7 +121,7 @@ export default function Stats() {
           </div>
 
           <div className="space-y-1">
-            <h3 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase opacity-70">
+            <h3 className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase opacity-70">
               {stat.title}
             </h3>
             <div className="flex items-center gap-3">

@@ -4,10 +4,12 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { Search, Building2, FileVideo, UserCheck, MonitorSmartphone, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
 function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
+  const { t } = useLanguage();
   const [results, setResults] = useState<{ etablissements: any[]; contents: any[]; users: any[]; screens: any[] }>({
     etablissements: [],
     contents: [],
@@ -18,7 +20,6 @@ function SearchContent() {
 
   useEffect(() => {
     if (!query) return;
-
     const run = async () => {
       setLoading(true);
       try {
@@ -47,7 +48,6 @@ function SearchContent() {
         setLoading(false);
       }
     };
-
     run();
   }, [query]);
 
@@ -60,59 +60,69 @@ function SearchContent() {
           <Search size={24} />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">Résultats pour "{query}"</h1>
-          <p className="text-muted-foreground mt-1">{total} correspondances trouvées.</p>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">
+            {t.dashboard.search.replace("...", "")} &ldquo;{query}&rdquo;
+          </h1>
+          <p className="text-muted-foreground mt-1">{total} {total > 1 ? "résultats" : "résultat"}</p>
         </div>
       </div>
 
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center text-muted-foreground">
           <Loader2 className="animate-spin text-primary mb-4" size={32} />
-          <p>Recherche en cours...</p>
+          <p>{t.common.loading}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <section className="soft-card p-5">
-            <h2 className="text-base font-bold text-foreground flex items-center gap-2 mb-4"><Building2 size={18} className="text-primary" /> Établissements ({results.etablissements.length})</h2>
+            <h2 className="text-base font-bold text-foreground flex items-center gap-2 mb-4">
+              <Building2 size={18} className="text-primary" /> {t.dashboard.etablissements} ({results.etablissements.length})
+            </h2>
             <div className="space-y-2">
               {results.etablissements.length ? results.etablissements.map((a) => (
-                <Link key={a._id || a.id} href="/dashboard/admin/etablissements" className="block p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors">
+                <Link key={a._id || a.id} href="/dashboard/admin/etablissement" className="block p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors">
                   <div className="flex items-center justify-between"><p className="text-sm font-medium text-foreground">{a.name}</p><ArrowRight size={14} className="text-muted-foreground" /></div>
                 </Link>
-              )) : <p className="text-xs text-muted-foreground">Aucun Établissement trouvé.</p>}
+              )) : <p className="text-xs text-muted-foreground">{t.common.no_data}</p>}
             </div>
           </section>
 
           <section className="soft-card p-5">
-            <h2 className="text-base font-bold text-foreground flex items-center gap-2 mb-4"><FileVideo size={18} className="text-emerald-500" /> Contenus ({results.contents.length})</h2>
+            <h2 className="text-base font-bold text-foreground flex items-center gap-2 mb-4">
+              <FileVideo size={18} className="text-emerald-500" /> {t.dashboard.content} ({results.contents.length})
+            </h2>
             <div className="space-y-2">
               {results.contents.length ? results.contents.map((c) => (
                 <Link key={c._id || c.id} href="/dashboard/admin/content" className="block p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors">
                   <div className="flex items-center justify-between"><p className="text-sm font-medium text-foreground">{c.title}</p><ArrowRight size={14} className="text-muted-foreground" /></div>
                 </Link>
-              )) : <p className="text-xs text-muted-foreground">Aucun contenu trouvé.</p>}
+              )) : <p className="text-xs text-muted-foreground">{t.common.no_data}</p>}
             </div>
           </section>
 
           <section className="soft-card p-5">
-            <h2 className="text-base font-bold text-foreground flex items-center gap-2 mb-4"><UserCheck size={18} className="text-amber-500" /> Managers ({results.users.length})</h2>
+            <h2 className="text-base font-bold text-foreground flex items-center gap-2 mb-4">
+              <UserCheck size={18} className="text-amber-500" /> {t.dashboard.managers} ({results.users.length})
+            </h2>
             <div className="space-y-2">
               {results.users.length ? results.users.map((u) => (
                 <Link key={u._id || u.id} href="/dashboard/admin/users" className="block p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors">
                   <div className="flex items-center justify-between"><p className="text-sm font-medium text-foreground">{u.fullname || u.name || u.email}</p><ArrowRight size={14} className="text-muted-foreground" /></div>
                 </Link>
-              )) : <p className="text-xs text-muted-foreground">Aucun utilisateur trouvé.</p>}
+              )) : <p className="text-xs text-muted-foreground">{t.common.no_data}</p>}
             </div>
           </section>
 
           <section className="soft-card p-5">
-            <h2 className="text-base font-bold text-foreground flex items-center gap-2 mb-4"><MonitorSmartphone size={18} className="text-violet-500" /> Écrans ({results.screens.length})</h2>
+            <h2 className="text-base font-bold text-foreground flex items-center gap-2 mb-4">
+              <MonitorSmartphone size={18} className="text-violet-500" /> {t.dashboard.screens} ({results.screens.length})
+            </h2>
             <div className="space-y-2">
               {results.screens.length ? results.screens.map((s) => (
                 <Link key={s._id || s.id} href="/dashboard/admin/screens" className="block p-3 rounded-xl border border-border hover:bg-muted/50 transition-colors">
                   <div className="flex items-center justify-between"><p className="text-sm font-medium text-foreground">{s.name}</p><ArrowRight size={14} className="text-muted-foreground" /></div>
                 </Link>
-              )) : <p className="text-xs text-muted-foreground">Aucun écran trouvé.</p>}
+              )) : <p className="text-xs text-muted-foreground">{t.common.no_data}</p>}
             </div>
           </section>
         </div>
@@ -123,9 +133,8 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="p-20 text-center text-muted-foreground">Chargement...</div>}>
+    <Suspense fallback={<div className="p-20 text-center text-muted-foreground"><Loader2 className="animate-spin mx-auto" size={32} /></div>}>
       <SearchContent />
     </Suspense>
   );
 }
-

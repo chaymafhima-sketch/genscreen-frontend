@@ -3,11 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, ArrowRight, MonitorPlay, AlertCircle, CheckCircle2 } from "lucide-react";
+import LanguageToggle from "@/app/components/LanguageToggle";
 import { signIn, useSession } from "next-auth/react";
+import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
 export default function LoginPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { t } = useLanguage();
 
   const [form, setForm] = useState({
     email: "",
@@ -39,7 +42,7 @@ export default function LoginPage() {
       });
 
       if (result?.ok) {
-        setSuccess("Connexion réussie ! Redirection...");
+        setSuccess(t.auth.success_login);
         const sessionRes = await fetch("/api/auth/session", { cache: "no-store" });
         const session = sessionRes.ok ? await sessionRes.json() : null;
         const role = session?.user?.role;
@@ -49,15 +52,14 @@ export default function LoginPage() {
           window.location.href = target;
         }, 900);
       } else {
-        // Here we use the specific error message from the backend
         const errorMessage = result?.error === "CredentialsSignin"
-          ? "Email ou mot de passe incorrect."
-          : (result?.error || "Une erreur est survenue lors de la connexion.");
+          ? t.auth.error_invalid_credentials
+          : (result?.error || t.common.error);
         setError(errorMessage);
       }
     } catch (err) {
       console.error("Erreur:", err);
-      setError("Impossible de contacter le serveur.");
+      setError(t.common.error);
     } finally {
       setIsLoading(false);
     }
@@ -65,6 +67,8 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen bg-slate-900 text-slate-100 overflow-hidden font-sans">
+
+
       {/* Left Pane - Visual Branding */}
       <div className="relative hidden w-1/2 lg:block">
         <div className="absolute inset-0 z-10 bg-slate-900/40 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
@@ -75,20 +79,27 @@ export default function LoginPage() {
         />
         <div className="absolute bottom-12 left-12 z-20 max-w-xl">
           <h1 className="text-4xl font-extrabold tracking-tight text-white mb-6">
-            L'affichage dynamique, <span className="text-blue-400">réinventé</span>.
+            {t.auth.brand_title} <span className="text-blue-400">{t.auth.brand_highlight}</span>
           </h1>
           <p className="mt-4 text-xl text-slate-300 leading-relaxed">
-            Créez, gérez et diffusez vos contenus avec une précision absolue.
-            Rejoignez notre plateforme de nouvelle génération.
+            {t.auth.brand_subtitle}
           </p>
         </div>
       </div>
 
       {/* Right Pane - Form */}
-      <div className="flex w-full flex-col justify-center px-8 sm:px-12 lg:w-1/2 lg:px-24 xl:px-32 relative bg-slate-950">
-        
+      <div className="flex w-full flex-col lg:w-1/2 relative bg-slate-950">
+
+        {/* Top bar with toggle */}
+        <div className="flex justify-end px-8 sm:px-12 lg:px-12 pt-6 z-10">
+          <LanguageToggle />
+        </div>
+
+        {/* Glow */}
         <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[120%] bg-blue-600/10 blur-[100px] pointer-events-none rounded-full" />
-        
+
+        {/* Form content */}
+        <div className="flex flex-1 flex-col justify-center px-8 sm:px-12 lg:px-24 xl:px-32">
         <div className="w-full max-w-md mx-auto z-10">
           <div className="mb-10 text-center lg:text-left">
             <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
@@ -97,12 +108,12 @@ export default function LoginPage() {
               </div>
               <span className="text-2xl font-bold tracking-wider text-slate-100 uppercase">TUS</span>
             </div>
-            
+
             <h2 className="text-3xl font-bold tracking-tight text-white mb-2">
-              Bon retour !
+              {t.auth.login_title}
             </h2>
             <p className="text-sm text-slate-400">
-              Connectez-vous pour accéder à votre espace sécurisé.
+              {t.auth.login_subtitle}
             </p>
           </div>
 
@@ -128,7 +139,7 @@ export default function LoginPage() {
                 </div>
                 <input
                   type="email"
-                  placeholder="Adresse email"
+                  placeholder={t.auth.email_placeholder}
                   className="block w-full rounded-xl border border-slate-700/50 bg-slate-900/50 p-4 pl-12 text-sm text-slate-100 shadow-sm transition-all focus:border-blue-500 focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-slate-500"
                   required
                   value={form.email}
@@ -142,7 +153,7 @@ export default function LoginPage() {
                 </div>
                 <input
                   type="password"
-                  placeholder="Mot de passe"
+                  placeholder={t.auth.password_placeholder}
                   className="block w-full rounded-xl border border-slate-700/50 bg-slate-900/50 p-4 pl-12 text-sm text-slate-100 shadow-sm transition-all focus:border-blue-500 focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-slate-500"
                   required
                   value={form.password}
@@ -156,14 +167,15 @@ export default function LoginPage() {
               disabled={isLoading}
               className="group flex w-full items-center justify-center gap-3 rounded-xl bg-blue-600 px-4 py-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-500 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none"
             >
-              {isLoading ? "Vérification..." : "Se connecter"}
+              {isLoading ? t.auth.verifying : t.auth.login_button}
               {!isLoading && <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />}
             </button>
           </form>
 
           <p className="mt-8 text-center text-sm text-slate-500 italic">
-            Plateforme réservée au personnel autorisé.
+            {t.auth.platform_reserved}
           </p>
+        </div>
         </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
+import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
 type LogType = 'error' | 'warning' | 'info' | 'success';
 
@@ -24,7 +25,6 @@ interface ApiLog {
   user?: string;
   details?: string;
   timestamp?: string;
-
   module?: string;
   event?: string;
   actorUserId?: string | null;
@@ -35,6 +35,7 @@ interface ApiLog {
 }
 
 export default function LogsPage() {
+  const { t } = useLanguage();
   const [logs, setLogs] = useState<ApiLog[]>([]);
   const [usersMap, setUsersMap] = useState<Record<string, string>>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -93,8 +94,6 @@ export default function LogsPage() {
     fetchUsers();
   }, []);
 
-  const filteredLogs = logs;
-
   const handleRefresh = () => {
     fetchLogs(true, page);
   };
@@ -134,89 +133,73 @@ export default function LogsPage() {
   const stats = {
     total: logs.length,
     errors: logs.filter(l => (l.type || eventToType(l.action || l.event || '')) === 'error').length,
-    warnings: logs.filter(l => (l.type || eventToType(l.action || l.event || '')) === 'warning').length,
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Header & Main Stats */}
+    <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
               <Terminal size={18} className="text-primary" />
             </div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">Historique</h1>
+            <h1 className="text-3xl font-bold text-foreground tracking-tight">{t.history.title}</h1>
           </div>
-          <p className="text-muted-foreground">Historique en temps réel des actions et événements du système.</p>
+          <p className="text-muted-foreground">{t.history.subtitle}</p>
         </div>
         
         <div className="flex flex-wrap gap-4 w-full lg:w-auto">
-          <div className="flex-1 lg:flex-none flex items-center gap-4 bg-muted/50 backdrop-blur-md border border-border p-3 px-5 rounded-2xl shadow-sm">
+          <div className="flex-1 lg:flex-none flex items-center gap-4 bg-muted/50 border border-border p-3 px-5 rounded-2xl shadow-sm">
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase">Alertes Critiques</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase">Alerts</span>
               <span className="text-xl font-bold text-destructive">{stats.errors}</span>
             </div>
             <div className="h-10 w-px bg-border" />
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase">Total Evenements</span>
+              <span className="text-[10px] font-bold text-muted-foreground uppercase">Total</span>
               <span className="text-xl font-bold text-foreground">{stats.total}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Control Bar */}
       <div className="flex justify-end items-center">
-        <button 
-          onClick={handleRefresh}
-          className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground hover:text-primary transition-all hover:bg-muted w-full md:w-auto soft-card shadow-sm"
-        >
+        <button onClick={handleRefresh} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground hover:text-primary transition-all soft-card">
           <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-          <span className="text-sm font-medium">Actualiser</span>
+          <span className="text-sm font-medium">{t.common.refresh}</span>
         </button>
       </div>
 
-      {/* Logs Table Container */}
       <div className="soft-card overflow-hidden min-h-[500px] flex flex-col shadow-none">
-        <div className="overflow-x-auto overflow-y-auto max-h-[65vh] custom-scrollbar">
+        <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 bg-muted/90 backdrop-blur-md z-10">
               <tr className="border-b border-border">
-                <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Status</th>
-                <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Evenement</th>
-                <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Source</th>
-                <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Utilisateur</th>
-                <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right">Horodatage</th>
+                <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase">{t.history.table.status}</th>
+                <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase">{t.history.table.event}</th>
+                <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase">{t.history.table.source}</th>
+                <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase">{t.history.table.user}</th>
+                <th className="p-4 px-6 text-[10px] font-bold text-muted-foreground uppercase text-right">{t.history.table.timestamp}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40 font-mono text-[13px]">
-              {filteredLogs.length > 0 ? (
-                filteredLogs.map((log) => {
+              {logs.length > 0 ? (
+                logs.map((log) => {
                   const type = log.type || eventToType(log.action || log.event || '');
-                  const actorName =
-                    log.user || 
-                    (log.actorUserId && usersMap[log.actorUserId]) ||
-                    (log.actorRole ? `${log.actorRole.toUpperCase()}` : "Système");
-                  const details = log.details || (log.meta ? JSON.stringify(log.meta) : "—");
-                  const eventName = log.action || log.event || "Événement inconnu";
+                  const actorName = log.user || (log.actorUserId && usersMap[log.actorUserId]) || (log.actorRole ? `${log.actorRole.toUpperCase()}` : "Système");
+                  const eventName = log.action || log.event || "---";
                   const moduleName = log.source || log.module || "Système";
                   const dateString = log.timestamp || log.createdAt || new Date().toISOString();
                   
                   return (
-                  <tr key={log._id || log.id || Math.random().toString()} className="hover:bg-muted/30 transition-colors group">
+                  <tr key={log._id || log.id || Math.random().toString()} className="hover:bg-muted/30 transition-colors">
                     <td className="p-4 px-6">
-                      <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold tracking-tight w-fit ${getStatusColor(type)}`}>
+                      <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold w-fit ${getStatusColor(type)}`}>
                         {getStatusIcon(type)}
                         {type.toUpperCase()}
                       </div>
                     </td>
-                    <td className="p-4 px-6">
-                      <div className="flex flex-col">
-                        <span className="text-foreground font-bold tracking-tight">{formatEvent(eventName)}</span>
-                        <span className="text-[11px] text-muted-foreground truncate max-w-xs">{details}</span>
-                      </div>
-                    </td>
+                    <td className="p-4 px-6 font-bold">{formatEvent(eventName)}</td>
                     <td className="p-4 px-6">
                       <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[11px] font-medium border border-border">
                         {moduleName}
@@ -224,62 +207,30 @@ export default function LogsPage() {
                     </td>
                     <td className="p-4 px-6">
                       <div className="flex items-center gap-2 text-foreground">
-                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center border border-border">
-                          <UserIcon size={12} className="text-muted-foreground" />
-                        </div>
+                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center border border-border"><UserIcon size={12} /></div>
                         {actorName}
                       </div>
                     </td>
-                    <td className="p-4 px-6 text-right whitespace-nowrap">
-                      <div className="flex flex-col items-end">
+                    <td className="p-4 px-6 text-right">
                         <span className="text-muted-foreground font-medium">{new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        <span className="text-[10px] text-muted-foreground/60">{new Date(dateString).toLocaleDateString()}</span>
-                      </div>
                     </td>
                   </tr>
                 )})
               ) : (
                 <tr>
-                  <td colSpan={5} className="p-20 text-center">
-                    <div className="flex flex-col items-center gap-4">
-                      <div className="p-4 rounded-full bg-muted text-muted-foreground">
-                        <AlertTriangle size={32} />
-                      </div>
-                      <p className="text-muted-foreground font-medium">Aucun événement ne correspond à vos filtres.</p>
-                    </div>
-                  </td>
+                  <td colSpan={5} className="p-20 text-center text-muted-foreground">{t.common.no_data}</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-        
-        {/* Footer info bar */}
-        <div className="p-4 bg-muted/50 border-t border-border">
-            <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-widest gap-4">
-                <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1.5"><div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Système Connecté</span>
-                    <span>Tailing : OFF</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => fetchLogs(true, Math.max(1, page - 1))}
-                    disabled={page <= 1 || isRefreshing}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded border border-border disabled:opacity-50 hover:bg-muted transition-colors"
-                  >
-                    <ChevronLeft size={12} /> Préc
-                  </button>
-                  <span>Page {pagination.page} / {pagination.totalPages}</span>
-                  <button
-                    onClick={() => fetchLogs(true, Math.min(pagination.totalPages, page + 1))}
-                    disabled={page >= pagination.totalPages || isRefreshing}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded border border-border disabled:opacity-50 hover:bg-muted transition-colors"
-                  >
-                    Suiv <ChevronRight size={12} />
-                  </button>
-                  <span className="ml-2">Affichage de {filteredLogs.length} sur {pagination.total}</span>
-                </div>
-            </div>
+        <div className="p-4 bg-muted/50 border-t border-border flex justify-between items-center text-[11px] font-bold text-muted-foreground uppercase">
+          <div className="flex gap-4"><span>SYSTEM ONLINE</span></div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => fetchLogs(true, Math.max(1, page - 1))} disabled={page <= 1 || isRefreshing} className="px-2 py-1 border rounded disabled:opacity-50"><ChevronLeft size={12} /></button>
+            <span>{pagination.page} / {pagination.totalPages}</span>
+            <button onClick={() => fetchLogs(true, Math.min(pagination.totalPages, page + 1))} disabled={page >= pagination.totalPages || isRefreshing} className="px-2 py-1 border rounded disabled:opacity-50"><ChevronRight size={12} /></button>
+          </div>
         </div>
       </div>
     </div>

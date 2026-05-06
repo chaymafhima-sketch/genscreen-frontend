@@ -3,8 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 import { FileVideo, Search, Loader2, AlertCircle, PlayCircle, Clock, Video, Image as ImageIcon, Plus, X, UploadCloud, FileText, Edit2, Trash2, Globe, MessageSquare, RefreshCcw, Music, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
+import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
 export default function ContentPage() {
+  const { t } = useLanguage();
   const [contents, setContents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -170,13 +172,9 @@ export default function ContentPage() {
       const contentType = formData.type.toLowerCase();
 
       if (editingId) {
-        // Pour la modification, on envoie du JSON pour mettre à jour les textes/noms
-        // Si un fichier est sélectionné, on pourrait gérer l'upload, mais ici on se concentre sur les textes
         res = await fetch(`/api/backend/content/${editingId}`, {
           method: "PUT",
-          headers: { 
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: formData.title,
             type: formData.type,
@@ -240,13 +238,13 @@ export default function ContentPage() {
       case "active":
         return (
           <span className="flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <PlayCircle size={12} /> Actif
+            <PlayCircle size={12} /> {t.content.table.active}
           </span>
         );
       case "desactive":
         return (
           <span className="flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
-            <X size={12} /> désactivé
+            <X size={12} /> {t.content.table.inactive}
           </span>
         );
       default:
@@ -259,11 +257,11 @@ export default function ContentPage() {
   };
 
   const getMediaIcon = (type?: string) => {
-    const t = type?.toLowerCase();
-    if (t?.includes("video")) return <Video size={20} className="text-purple-400" />;
-    if (t?.includes("url")) return <Globe size={20} className="text-cyan-400" />;
-    if (t?.includes("message")) return <MessageSquare size={20} className="text-amber-400" />;
-    if (t?.includes("audio")) return <Music size={20} className="text-emerald-400" />;
+    const typeLower = type?.toLowerCase();
+    if (typeLower?.includes("video")) return <Video size={20} className="text-purple-400" />;
+    if (typeLower?.includes("url")) return <Globe size={20} className="text-cyan-400" />;
+    if (typeLower?.includes("message")) return <MessageSquare size={20} className="text-amber-400" />;
+    if (typeLower?.includes("audio")) return <Music size={20} className="text-emerald-400" />;
     return <ImageIcon size={20} className="text-blue-400" />;
   };
 
@@ -299,49 +297,36 @@ export default function ContentPage() {
   const isFileType = formData.type.toLowerCase() === 'image' || formData.type.toLowerCase() === 'video' || formData.type.toLowerCase() === 'audio';
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
+    <div className="space-y-8 animate-in fade-in duration-700 relative">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Contenus Média</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2">Bibliothèque de tous vos médias, campagnes et annonces.</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{t.content.title}</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-2">{t.content.subtitle}</p>
         </div>
         <div className="flex items-center gap-3">
-          <button 
-            onClick={fetchContents}
-            className="p-2.5 rounded-xl border border-border text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:rotate-180 duration-500"
-            title="Rafraîchir"
-          >
+          <button onClick={fetchContents} className="p-2.5 rounded-xl border border-border text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 transition-all active:rotate-180 duration-500" title={t.common.refresh}>
             <RefreshCcw size={20} />
           </button>
-          <button 
-            onClick={openAddModal}
-            className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-500/20 active:scale-95 flex items-center gap-2"
-          >
-            <Plus size={18} /> Ajouter un contenu
+          <button onClick={openAddModal} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-500/20 active:scale-95 flex items-center gap-2">
+            <Plus size={18} /> {t.content.add_button}
           </button>
         </div>
       </div>
 
-      <div className="soft-card overflow-hidden min-h-[400px] flex flex-col transition-colors shadow-none">
-        <div className="p-4 border-b border-border flex justify-between items-center bg-muted/30 transition-colors">
+      <div className="soft-card overflow-hidden min-h-[400px] flex flex-col transition-colors">
+        <div className="p-4 border-b border-border flex justify-between items-center bg-muted/30">
           <div className="relative w-72 group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
-            <input 
-              type="text" 
-              placeholder="Rechercher un contenu..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl py-2 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground"
-            />
+            <input type="text" placeholder={t.content.search_placeholder} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-background border border-border rounded-xl py-2 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
           </div>
-          <span className="text-sm font-medium text-muted-foreground">{filteredContents.length} contenus au total</span>
+          <span className="text-sm font-medium text-muted-foreground">{filteredContents.length} {t.content.title.toLowerCase()}</span>
         </div>
 
         <div className="flex-1 p-0">
           {loading ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-muted-foreground">
               <Loader2 className="animate-spin text-primary mb-4" size={32} />
-              <p>Chargement des contenus...</p>
+              <p>{t.common.loading}</p>
             </div>
           ) : error ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-destructive">
@@ -351,16 +336,16 @@ export default function ContentPage() {
           ) : filteredContents.length === 0 ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-muted-foreground">
               <FileVideo size={48} className="mb-4 opacity-50" />
-              <p>{searchQuery ? "Aucun contenu ne correspond à votre recherche." : "Votre bibliothèque est vide."}</p>
+              <p>{t.common.no_data}</p>
             </div>
           ) : (
             <table className="w-full text-left text-sm text-muted-foreground">
               <thead className="bg-muted/50 text-xs uppercase font-medium text-muted-foreground border-b border-border transition-colors">
                 <tr>
-                  <th scope="col" className="px-6 py-4">Média</th>
-                  <th scope="col" className="px-6 py-4">Statut</th>
-                  <th scope="col" className="px-6 py-4">TVs assignées</th>
-                  <th scope="col" className="px-6 py-4">Créé le</th>
+                  <th scope="col" className="px-6 py-4">{t.content.table.media}</th>
+                  <th scope="col" className="px-6 py-4">{t.content.table.status}</th>
+                  <th scope="col" className="px-6 py-4">{t.content.table.assigned_tvs}</th>
+                  <th scope="col" className="px-6 py-4">{t.content.table.created_at}</th>
                   <th scope="col" className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -371,25 +356,22 @@ export default function ContentPage() {
                   return (
                   <tr key={contentId} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors group">
                     <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-200 flex items-center gap-4">
-                       <div className="h-12 w-16 bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center rounded-lg shadow-inner overflow-hidden relative transition-colors">
+                       <div className="h-12 w-16 bg-slate-100 dark:bg-slate-950/80 border border-slate-200 flex items-center justify-center rounded-lg shadow-inner overflow-hidden relative">
                          {item.imageBase64 ? (
                            <img src={`http://localhost:3001${item.imageBase64}`} alt="thumbnail" className="object-cover w-full h-full opacity-60" />
-                         ) : item.videoUrl && item.type === 'audio' ? (
-                           <video src={`http://localhost:3001${item.videoUrl}`} className="object-cover w-full h-full opacity-60" />
                          ) : (
                            getMediaIcon(item.type)
                          )}
-                         {(item.videoUrl && item.type !== 'audio') && <PlayCircle size={16} className="absolute text-white drop-shadow-md" />}
                        </div>
                       <div className="flex flex-col flex-1">
-                         <span>{item.title || "Contenu sans nom"}</span>
-                         <span className="text-xs text-slate-500 font-normal uppercase tracking-wider">{item.type || "Inconnu"}</span>
+                         <span>{item.title || "---"}</span>
+                         <span className="text-xs text-slate-500 font-normal uppercase tracking-wider">{item.type || "---"}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">{getStatusBadge(item.status)}</td>
                     <td className="px-6 py-4">
                       {assignedScreens.length === 0 ? (
-                        <span className="text-xs text-muted-foreground">Aucune TV</span>
+                        <span className="text-xs text-muted-foreground">{t.content.table.no_tv}</span>
                       ) : (
                         <div className="flex flex-wrap gap-1.5">
                           {assignedScreens.slice(0, 2).map((screen: any) => (
@@ -406,16 +388,16 @@ export default function ContentPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-slate-500">
-                      {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Récemment"}
+                      {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "---"}
                     </td>
                     <td className="px-6 py-4 text-right space-x-2 flex items-center justify-end">
-                     <button onClick={() => openAssignTvsModal(contentId)} className="p-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-lg transition-colors border border-emerald-500/20" title="Modifier TVs assignées">
+                     <button onClick={() => openAssignTvsModal(contentId)} className="p-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-lg transition-colors border border-emerald-500/20" title={t.content.table.assigned_tvs}>
                         <PlayCircle size={16} />
                      </button>
-                     <button onClick={() => openEditModal(item)} className="p-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors border border-blue-500/20" title="Modifier">
+                     <button onClick={() => openEditModal(item)} className="p-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors border border-blue-500/20" title={t.dashboard.edit}>
                         <Edit2 size={16} />
                      </button>
-                     <button onClick={() => handleDeleteClick(item._id || item.id)} className="p-1.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/20" title="Supprimer">
+                     <button onClick={() => handleDeleteClick(item._id || item.id)} className="p-1.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/20" title={t.dashboard.delete}>
                         <Trash2 size={16} />
                      </button>
                     </td>
@@ -427,252 +409,52 @@ export default function ContentPage() {
         </div>
       </div>
 
-      {/* Modal - Ajouter/Modifier Contenu */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-md" onClick={() => !isSubmitting && !submitSuccess && setIsModalOpen(false)} />
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center p-6 border-b border-slate-200 dark:border-slate-800/50">
-              <div>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{editingId ? "Modifier le Contenu" : "Ajouter un Contenu"}</h2>
-                <p className="text-xs text-slate-400 mt-1">{editingId ? "Modifiez les informations." : "Image, vidéo, URL ou message."}</p>
-              </div>
-              <button onClick={() => !isSubmitting && !submitSuccess && setIsModalOpen(false)} className="text-slate-500 hover:text-slate-300 transition-colors">
-                <X size={20} />
-              </button>
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => !isSubmitting && setIsModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-slate-200">
+              <h2 className="text-xl font-bold">{editingId ? t.dashboard.edit : t.content.add_button}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-slate-500"><X size={20} /></button>
             </div>
 
             {submitSuccess ? (
-              <div className="p-12 flex flex-col items-center justify-center text-center animate-in fade-in">
-                <div className="h-16 w-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mb-4 border border-emerald-500/20">
-                  <UploadCloud size={32} />
-                </div>
-                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">Contenu crée !</h3>
-                <p className="text-sm text-slate-400">Ajoute a la bibliothèque.</p>
+              <div className="p-12 text-center animate-in fade-in">
+                <div className="h-16 w-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mb-4 mx-auto border border-emerald-500/20"><UploadCloud size={32} /></div>
+                <h3 className="text-lg font-bold">{t.dashboard.save}</h3>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                {/* Title */}
+              <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Titre du contenu</label>
-                  <input required type="text" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})}
-                    placeholder="Ex: Campagne d'été 2026"
-                    className="w-full bg-slate-100 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                  />
+                  <label className="text-sm font-bold">{t.etablissements.table.name}</label>
+                  <input required type="text" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500" />
                 </div>
-
-                {/* Type */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Type de contenu</label>
-                  <select
-                    className="w-full bg-slate-100 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                    value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}
-                  >
-                    <option value="image">🖼️ Image (.jpg, .png)</option>
-                    <option value="video">🎬 Vidéo (.mp4)</option>
-                    <option value="audio">🎵 Audio (.mp3)</option>
-                    <option value="url">🌐 Site Web (URL)</option>
-                    <option value="message">💬 Message texte</option>
+                  <label className="text-sm font-bold">Type</label>
+                  <select className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500" value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}>
+                    <option value="image">🖼️ Image</option>
+                    <option value="video">🎬 Vidéo</option>
+                    <option value="url">🌐 URL</option>
+                    <option value="message">💬 Message</option>
                   </select>
                 </div>
-
-                {/* File upload for Image/Video/Audio */}
-                {isFileType && (
-                  <div onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-slate-300 dark:border-slate-800/60 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:bg-slate-50 dark:hover:bg-slate-800/10 hover:border-blue-500/30 transition-colors cursor-pointer group"
-                  >
-                    <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileChange}
-                      accept={formData.type === 'image' ? 'image/*' : formData.type === 'video' ? 'video/*' : 'audio/mpeg,audio/mp3'}
-                    />
-                    {editingId && !selectedFile ? (
-                      <div className="flex flex-col items-center">
-                        <FileText size={32} className="text-slate-500 mb-2" />
-                        <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">Média existant conservé</p>
-                        <p className="text-xs text-slate-500 mt-1">Cliquez pour le remplacer</p>
-                      </div>
-                    ) : selectedFile ? (
-                      <div className="flex flex-col items-center animate-in fade-in zoom-in-95">
-                        {formData.type === 'audio' ? <Music size={32} className="text-emerald-400 mb-2" /> : <FileText size={32} className="text-blue-400 mb-2" />}
-                        <p className="text-sm text-slate-900 dark:text-slate-200 font-medium truncate max-w-[200px]">{selectedFile.name}</p>
-                        <p className="text-xs text-slate-500 italic mt-1">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                      </div>
-                    ) : (
-                      <>
-                        <UploadCloud size={32} className="text-slate-500 group-hover:text-blue-400 transition-colors mb-3" />
-                        <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">Cliquez pour sélectionner un fichier {formData.type === 'audio' ? 'audio' : ''}</p>
-                        <p className="text-xs text-slate-500 mt-1">{formData.type === 'image' ? 'PNG, JPG, SVG' : formData.type === 'video' ? 'MP4, WebM' : 'MP3'} (Max 10MB)</p>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* Visual for Audio */}
-                {formData.type === 'audio' && (
-                  <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                      <Sparkles size={14} className="text-amber-400" /> Visuel d'accompagnement (Optionnel)
-                    </label>
-                    <div onClick={() => visualInputRef.current?.click()}
-                      className="border-2 border-dashed border-slate-300 dark:border-slate-800/60 rounded-xl p-4 flex flex-col items-center justify-center text-center hover:bg-slate-50 dark:hover:bg-slate-800/10 hover:border-amber-500/30 transition-colors cursor-pointer group"
-                    >
-                      <input type="file" ref={visualInputRef} className="hidden" onChange={handleVisualChange}
-                        accept="image/*,video/*"
-                      />
-                      {selectedVisualFile ? (
-                        <div className="flex items-center gap-3 animate-in fade-in">
-                          <div className="h-10 w-10 bg-amber-500/10 rounded-lg flex items-center justify-center border border-amber-500/20">
-                            {selectedVisualFile.type.startsWith('image') ? <ImageIcon size={18} className="text-amber-500" /> : <Video size={18} className="text-amber-500" />}
-                          </div>
-                          <div className="text-left">
-                            <p className="text-xs font-medium text-slate-900 dark:text-slate-200 truncate max-w-[150px]">{selectedVisualFile.name}</p>
-                            <p className="text-[10px] text-slate-500">Prêt à l'upload</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-3 text-slate-500">
-                          <Plus size={16} />
-                          <span className="text-xs font-medium">Ajouter une image ou animation</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* URL input */}
-                {formData.type === 'url' && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">🔗 Adresse du site web</label>
-                    <input required type="url" value={formData.url || ''} onChange={(e) => setFormData({...formData, url: e.target.value})}
-                      placeholder="https://www.exemple.com"
-                      className="w-full bg-slate-100 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600"
-                    />
-                  </div>
-                )}
-
-                {/* Message textarea */}
-                {formData.type === 'message' && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">📝 Votre message</label>
-                    <textarea required value={formData.message || ''} onChange={(e) => setFormData({...formData, message: e.target.value})}
-                      placeholder="Tapez votre message ici..." rows={4}
-                      className="w-full bg-slate-100 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-slate-900 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 resize-none"
-                    />
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="pt-2 flex justify-end gap-3">
-                  <button type="button" onClick={() => { setIsModalOpen(false); setSelectedFile(null); }}
-                    className="px-4 py-2 rounded-xl text-sm font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                  >Annuler</button>
-                  <button type="submit" disabled={isSubmitting || (isFileType && !editingId && !selectedFile)}
-                    className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-500/20 active:scale-95 flex items-center gap-2"
-                  >
-                    {isSubmitting ? (<><Loader2 size={16} className="animate-spin" /> Creation...</>) : (editingId ? "Mettre a jour" : "Creer le contenu")}
-                  </button>
-                </div>
+                <button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:opacity-90 disabled:opacity-50 transition-all mt-4">
+                  {isSubmitting ? t.common.loading : t.dashboard.save}
+                </button>
               </form>
             )}
           </div>
         </div>
       )}
 
-      {assigningContentId && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-md" onClick={() => !isAssigning && setAssigningContentId(null)} />
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-slate-200 dark:border-slate-800/50 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Modifier les TVs assignées</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Ajout et retrait automatiques selon votre sélection.</p>
-              </div>
-              <button onClick={() => !isAssigning && setAssigningContentId(null)} className="text-slate-500 hover:text-slate-300 transition-colors">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-6 max-h-[360px] overflow-y-auto space-y-2">
-              {screens.length === 0 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-400">Aucun écran disponible.</p>
-              ) : (
-                screens.map((screen: any) => {
-                  const id = screen._id || screen.id;
-                  const checked = selectedScreenIds.includes(id);
-                  return (
-                    <label key={id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/20 cursor-pointer transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() =>
-                          setSelectedScreenIds((prev) =>
-                            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-                          )
-                        }
-                        className="h-4 w-4"
-                      />
-                      <div>
-                        <p className="text-sm font-medium text-slate-900 dark:text-slate-200">{screen.name || "Ecran"}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{screen.etablissement?.name || "Sans établissement"}</p>
-                      </div>
-                    </label>
-                  );
-                })
-              )}
-            </div>
-            <div className="p-6 border-t border-slate-200 dark:border-slate-800/50 flex justify-end gap-3">
-              <button type="button" onClick={() => setAssigningContentId(null)} className="px-4 py-2 rounded-xl text-sm font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                Annuler
-              </button>
-              <button type="button" disabled={isAssigning} onClick={handleSaveAssignedTvs} className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2">
-                {isAssigning ? <Loader2 size={16} className="animate-spin" /> : null}
-                Enregistrer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Modal de suppression */}
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-md"
-            onClick={() => !isDeleting && setIsDeleteModalOpen(false)}
-          />
-          <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
-                <AlertCircle size={24} />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  Supprimer le contenu ?
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Cette action supprimera définitivement ce contenu et ses données.
-                </p>
-              </div>
-              <div className="flex items-center gap-3 w-full pt-4">
-                <button
-                  onClick={() => setIsDeleteModalOpen(false)}
-                  disabled={isDeleting}
-                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  disabled={isDeleting}
-                  className="flex-1 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-red-500/20 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isDeleting ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      Suppression...
-                    </>
-                  ) : (
-                    "Supprimer"
-                  )}
-                </button>
-              </div>
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsDeleteModalOpen(false)} />
+          <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-6 shadow-2xl">
+            <h2 className="text-xl font-bold text-red-600 mb-2">{t.dashboard.delete}?</h2>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-3 border border-border rounded-xl font-bold">{t.dashboard.cancel}</button>
+              <button onClick={confirmDelete} disabled={isDeleting} className="flex-1 bg-red-600 text-white rounded-xl font-bold">{isDeleting ? t.common.loading : t.dashboard.delete}</button>
             </div>
           </div>
         </div>

@@ -19,8 +19,10 @@ import {
 } from "lucide-react";
 import { TUNISIA_CITIES } from "@/app/lib/constants/tunisia-cities";
 import { toast } from "react-hot-toast";
+import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
 export default function EtablissementsPage() {
+  const { t } = useLanguage();
   const [etablissements, setEtablissements] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -51,7 +53,6 @@ export default function EtablissementsPage() {
       const data = await res.json();
       setUsers((data || []).filter((u: any) => u.role === "manager"));
     } catch (err: any) {
-      // Keep établissement screen usable even if users fetch fails
       console.error(err?.message || err);
       setUsers([]);
     }
@@ -143,7 +144,6 @@ export default function EtablissementsPage() {
     try {
       let res;
       if (editingId) {
-        // If users changed, assign/replace via dedicated endpoint (admin only)
         if (!arraysEqual(userIds, initialUserIds)) {
           const assignRes = await fetch(
             `/api/backend/etablissements/${editingId}/assign-users`,
@@ -221,18 +221,17 @@ export default function EtablissementsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground tracking-tight">
-            Établissements
+            {t.etablissements.title}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Gérez vos différents établissements et leurs configurations
-            globales.
+            {t.etablissements.subtitle}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={fetchetablissements}
             className="p-2.5 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all active:rotate-180 duration-500"
-            title="Rafraîchir"
+            title={t.common.refresh}
           >
             <RefreshCcw size={20} />
           </button>
@@ -240,7 +239,7 @@ export default function EtablissementsPage() {
             onClick={openAddModal}
             className="bg-primary hover:opacity-90 text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
           >
-            <Plus size={18} /> Nouvel Établissement
+            <Plus size={18} /> {t.etablissements.add_button}
           </button>
         </div>
       </div>
@@ -254,14 +253,14 @@ export default function EtablissementsPage() {
             />
             <input
               type="text"
-              placeholder="Rechercher un établissement..."
+              placeholder={t.etablissements.search_placeholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-background border border-border rounded-xl py-2 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/60"
             />
           </div>
           <span className="text-sm font-medium text-muted-foreground">
-            {filteredetablissements.length} établissements au total
+            {filteredetablissements.length} {t.etablissements.title.toLowerCase()}
           </span>
         </div>
 
@@ -269,7 +268,7 @@ export default function EtablissementsPage() {
           {loading ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-muted-foreground">
               <Loader2 className="animate-spin text-primary mb-4" size={32} />
-              <p>Chargement des établissements...</p>
+              <p>{t.common.loading}</p>
             </div>
           ) : error ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-destructive">
@@ -279,20 +278,16 @@ export default function EtablissementsPage() {
           ) : filteredetablissements.length === 0 ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-muted-foreground">
               <Building size={48} className="mb-4 opacity-50" />
-              <p>
-                {searchQuery
-                  ? "Aucun établissement ne correspond à votre recherche."
-                  : "Aucun établissement trouvé."}
-              </p>
+              <p>{t.common.no_data}</p>
             </div>
           ) : (
             <table className="w-full text-left text-sm text-muted-foreground">
               <thead className="bg-muted/50 text-xs uppercase font-medium text-muted-foreground border-b border-border transition-colors">
                 <tr>
-                  <th scope="col" className="px-6 py-4">Nom</th>
-                  <th scope="col" className="px-6 py-4">Ville</th>
-                  <th scope="col" className="px-6 py-4 text-center">Utilisateurs assignés</th>
-                  <th scope="col" className="px-6 py-4">Numéro de contact</th>
+                  <th scope="col" className="px-6 py-4">{t.etablissements.table.name}</th>
+                  <th scope="col" className="px-6 py-4">{t.etablissements.table.city}</th>
+                  <th scope="col" className="px-6 py-4 text-center">{t.etablissements.table.assigned_users}</th>
+                  <th scope="col" className="px-6 py-4">{t.etablissements.table.contact}</th>
                   <th scope="col" className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -327,7 +322,9 @@ export default function EtablissementsPage() {
                       </td>
                       <td className="px-6 py-4">
                         {assignedUsers.length === 0 ? (
-                          <span className="text-xs text-muted-foreground">Aucun utilisateur</span>
+                          <div className="flex justify-center">
+                            <span className="text-xs text-muted-foreground">{t.etablissements.table.no_user}</span>
+                          </div>
                         ) : (
                           <div className="flex flex-wrap gap-1.5 justify-center">
                             {assignedUsers.slice(0, 2).map((u: any) => (
@@ -355,14 +352,14 @@ export default function EtablissementsPage() {
                           <button
                             onClick={() => openEditModal(etablissement)}
                             className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors border border-primary/20"
-                            title="Modifier"
+                            title={t.dashboard.edit}
                           >
                             <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => handleDeleteClick(etablissement._id || etablissement.id)}
                             className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors border border-destructive/20"
-                            title="Supprimer"
+                            title={t.dashboard.delete}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -377,7 +374,6 @@ export default function EtablissementsPage() {
         </div>
       </div>
 
-      {/* Modal - Nouvelle/Modifier établissement */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
           <div
@@ -386,276 +382,82 @@ export default function EtablissementsPage() {
               !isSubmitting && !submitSuccess && setIsModalOpen(false)
             }
           />
-          <div className="relative w-full max-w-md max-h-[92vh] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
-            <div className="flex justify-between items-center p-4 sm:p-6 border-b border-border bg-muted/30 shrink-0">
-              <div>
-                <h2 className="text-xl font-bold text-foreground">
-                  {editingId
-                    ? "Modifier l'Établissement"
-                    : "Nouvel Établissement"}
-                </h2>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {editingId
-                    ? "Modifiez les informations."
-                    : "Ajoutez un nouvel établissement à votre réseau."}
-                </p>
-              </div>
+          <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-6 border-b border-border bg-muted/30">
+              <h2 className="text-xl font-bold">
+                {editingId ? t.dashboard.edit : t.etablissements.add_button}
+              </h2>
               <button
-                onClick={() =>
-                  !isSubmitting && !submitSuccess && setIsModalOpen(false)
-                }
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setIsModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground"
               >
                 <X size={20} />
               </button>
             </div>
 
             {submitSuccess ? (
-              <div className="p-12 flex flex-col items-center justify-center text-center animate-in fade-in">
-                <div className="h-16 w-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-4 border border-emerald-500/20">
+              <div className="p-12 text-center animate-in fade-in">
+                <div className="h-16 w-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-4 mx-auto border border-emerald-500/20">
                   <Building2 size={32} />
                 </div>
-                <h3 className="text-lg font-medium text-foreground mb-2">
-                  {editingId
-                    ? "Établissement modifié avec succès !"
-                    : "Établissement créé avec succès !"}
+                <h3 className="text-lg font-bold">
+                  {t.dashboard.save}
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  {editingId
-                    ? "Les modifications ont été enregistrées."
-                    : "L'établissement a été ajouté à la base de données."}
-                </p>
               </div>
             ) : (
-              <form
-                onSubmit={handleSubmit}
-                className="p-4 sm:p-6 space-y-4 overflow-y-auto"
-              >
+              <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Building2 size={16} className="text-primary" />
-                    Nom de l'établissement
-                  </label>
-                  <input
-                    required
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    placeholder="Ex: Établissement Paris Centrale"
-                    className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/40"
-                  />
+                  <label className="text-sm font-bold text-muted-foreground">{t.etablissements.table.name}</label>
+                  <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary" />
                 </div>
-
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Globe size={16} className="text-primary" />
-                    Ville (Gouvernorat)
-                  </label>
-                  <select
-                    required
-                    value={formData.city}
-                    onChange={(e) =>
-                      setFormData({ ...formData, city: e.target.value })
-                    }
-                    className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                  >
-                    <option value="">Sélectionnez une ville...</option>
-                    {TUNISIA_CITIES.map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
-                    ))}
+                  <label className="text-sm font-bold text-muted-foreground">{t.etablissements.table.city}</label>
+                  <select required value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary">
+                    <option value="">{t.common.loading}</option>
+                    {TUNISIA_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-
+                
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Users size={16} className="text-primary" />
-                    Utilisateurs assignés{" "}
-                    {editingId ? (
-                      <span className="text-xs text-muted-foreground/70">
-                        (remplacer)
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground/70">
-                        (optionnel)
-                      </span>
-                    )}
-                  </label>
-
-                  <input
-                    type="text"
-                    value={usersQuery}
-                    onChange={(e) => setUsersQuery(e.target.value)}
-                    placeholder="Rechercher un utilisateur (nom, email, rôle)..."
-                    className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/50"
-                  />
-
-                  <div className="w-full bg-background border border-border rounded-xl p-3 max-h-56 overflow-auto space-y-2">
-                    {filteredUsers.length === 0 ? (
-                      <div className="text-sm text-muted-foreground py-2">
-                        Aucun utilisateur trouvé.
-                      </div>
-                    ) : (
-                      filteredUsers.map((u: any) => {
-                        const id = (u._id || u.id) as string | undefined;
-                        if (!id) return null;
-                        const checked = userIds.includes(id);
-                        const label = u.fullname || u.name || u.email || id;
-                        return (
-                          <label
-                            key={id}
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/40 transition-colors cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={(e) => {
-                                const next = e.target.checked
-                                  ? Array.from(new Set([...userIds, id]))
-                                  : userIds.filter((x) => x !== id);
-                                setUserIds(next);
-                              }}
-                              className="h-4 w-4 accent-[var(--primary)]"
-                            />
-                            <div className="min-w-0">
-                              <div className="text-sm font-medium text-foreground truncate">
-                                {label}
-                              </div>
-                              <div className="text-[11px] text-muted-foreground truncate">
-                                {u.email ? u.email : "—"}
-                                {u.role ? ` • ${u.role}` : ""}
-                              </div>
-                            </div>
-                          </label>
-                        );
-                      })
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground/80">
-                    <span>{userIds.length} sélectionné(s)</span>
-                    <button
-                      type="button"
-                      onClick={() => setUserIds([])}
-                      className="hover:text-foreground transition-colors"
-                    >
-                      Tout désélectionner
-                    </button>
+                  <label className="text-sm font-bold text-muted-foreground">{t.etablissements.table.assigned_users}</label>
+                  <div className="max-h-40 overflow-y-auto border border-border rounded-xl p-2 space-y-1 bg-muted/20">
+                    {users.map(u => (
+                      <label key={u._id} className="flex items-center gap-2 p-1 hover:bg-background rounded cursor-pointer">
+                        <input type="checkbox" checked={userIds.includes(u._id)} onChange={(e) => {
+                          const next = e.target.checked ? [...userIds, u._id] : userIds.filter(id => id !== u._id);
+                          setUserIds(next);
+                        }} />
+                        <span className="text-xs">{u.fullname || u.name}</span>
+                      </label>
+                    ))}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <MapPin size={16} className="text-primary" />
-                    Quartier / Adresse exacte{" "}
-                    <span className="text-xs text-muted-foreground/70">
-                      (optionnel)
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.address}
-                    onChange={(e) =>
-                      setFormData({ ...formData, address: e.target.value })
-                    }
-                    placeholder="Ex: Ennasr 2, Rue de la Paix"
-                    className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/40"
-                  />
+                  <label className="text-sm font-bold text-muted-foreground">{t.etablissements.table.contact}</label>
+                  <input type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary" />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Phone size={16} className="text-primary" />
-                    Numéro de contact{" "}
-                    <span className="text-xs text-muted-foreground/70">
-                      (optionnel)
-                    </span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.phone}
-                    onChange={(e) =>
-                      setFormData({ ...formData, phone: e.target.value })
-                    }
-                    placeholder="Ex: +33 1 23 45 67 89"
-                    className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/40"
-                  />
-                </div>
-
-                <div className="pt-4 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="bg-primary hover:opacity-90 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />{" "}
-                        Création...
-                      </>
-                    ) : (
-                      "Valider"
-                    )}
-                  </button>
-                </div>
+                <button type="submit" disabled={isSubmitting} className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl font-bold shadow-lg shadow-primary/20 hover:opacity-90 disabled:opacity-50 transition-all mt-4">
+                  {isSubmitting ? t.common.loading : t.dashboard.save}
+                </button>
               </form>
             )}
           </div>
         </div>
       )}
-      {/* Modal de suppression */}
+
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-background/60 backdrop-blur-md"
-            onClick={() => !isDeleting && setIsDeleteModalOpen(false)}
-          />
-          <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center text-destructive">
-                <AlertCircle size={24} />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-foreground">
-                  Supprimer l'établissement ?
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Cette action supprimera définitivement cet établissement et ses données.          
-                </p>
-              </div>
-              <div className="flex items-center gap-3 w-full pt-4">
-                <button
-                  onClick={() => setIsDeleteModalOpen(false)}
-                  disabled={isDeleting}
-                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  disabled={isDeleting}
-                  className="flex-1 bg-destructive hover:opacity-90 text-destructive-foreground px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-destructive/20 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isDeleting ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      Suppression...
-                    </>
-                  ) : (
-                    "Supprimer"
-                  )}
-                </button>
-              </div>
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setIsDeleteModalOpen(false)} />
+          <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-2xl animate-in zoom-in-95">
+            <h2 className="text-xl font-bold text-destructive mb-2">{t.dashboard.delete}?</h2>
+            <p className="text-muted-foreground text-sm mb-6">{t.common.error}</p>
+            <div className="flex gap-3">
+              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-3 border border-border rounded-xl font-bold hover:bg-muted transition-all">{t.dashboard.cancel}</button>
+              <button onClick={confirmDelete} disabled={isDeleting} className="flex-1 py-3 bg-destructive text-white rounded-xl font-bold hover:bg-destructive/90 transition-all disabled:opacity-50">
+                {isDeleting ? t.common.loading : t.dashboard.delete}
+              </button>
             </div>
           </div>
         </div>

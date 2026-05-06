@@ -3,28 +3,24 @@
 import { useEffect, useState, useRef } from "react";
 import {
   LogOut,
-  Search,
   User,
   Mail,
   ChevronDown,
-  Building2,
-  FileVideo,
-  MonitorSmartphone,
-  UserCheck,
-  ArrowRight,
   Sun,
   Moon,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { signOut, useSession } from "next-auth/react";
+import { useLanguage } from "@/lib/dictionaries/LanguageContext";
+import LanguageToggle from "@/app/components/LanguageToggle";
 
 export default function Header() {
   const router = useRouter();
-  const pathname = usePathname();
-  const showSearch = pathname.startsWith("/dashboard");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { data: session } = useSession();
+  const { t } = useLanguage();
+
   const userData = ((session as any)?.user || {}) as {
     name?: string;
     fullname?: string;
@@ -40,144 +36,24 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Search State
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<{
-    etablissements: any[];
-    contents: any[];
-    users: any[];
-    screens: any[];
-  }>({ etablissements: [], contents: [], users: [], screens: [] });
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
-
-  // Notifications State Removed
-
-  // Real-time search logic
-  useEffect(() => {
-    if (searchQuery.length < 1) {
-      setSearchResults({
-        etablissements: [],
-        contents: [],
-        users: [],
-        screens: [],
-      });
-      setShowSearchDropdown(false);
-      return;
-    }
-
-    const delayDebounce = setTimeout(async () => {
-      setIsSearching(true);
-      setShowSearchDropdown(true);
-      try {
-        const [resetablissements, resContent, resUsers, resScreens] =
-          await Promise.all([
-            fetch("/api/backend/etablissements", { cache: "no-store" }),
-            fetch("/api/backend/content", { cache: "no-store" }),
-            fetch("/api/backend/users", { cache: "no-store" }),
-            fetch("/api/backend/screens", { cache: "no-store" }),
-          ]);
-
-        const etablissements = resetablissements.ok
-          ? await resetablissements.json()
-          : [];
-        const contents = resContent.ok ? await resContent.json() : [];
-        const users = resUsers.ok ? await resUsers.json() : [];
-        const screens = resScreens.ok ? await resScreens.json() : [];
-
-        const filteredetablissements = etablissements
-          .filter((a: any) =>
-            `${a.name || ""} ${a.city || ""} ${a.address || ""}`
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()),
-          )
-          .slice(0, 3);
-
-        const filteredContents = contents
-          .filter((c: any) =>
-            `${c.title || ""} ${c.type || ""}`
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()),
-          )
-          .slice(0, 3);
-
-        const filteredUsers = users
-          .filter((u: any) =>
-            `${u.fullname || u.name || ""} ${u.email || ""} ${u.role || ""}`
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()),
-          )
-          .slice(0, 3);
-
-        const filteredScreens = screens
-          .filter((s: any) =>
-            `${s.name || ""} ${s.status || ""} ${s.ip || ""}`
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()),
-          )
-          .slice(0, 3);
-
-        setSearchResults({
-          etablissements: filteredetablissements,
-          contents: filteredContents,
-          users: filteredUsers,
-          screens: filteredScreens,
-        });
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(delayDebounce);
-  }, [searchQuery]);
-
-  // Click outside to close dropdowns
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        searchRef.current &&
-        !searchRef.current.contains(event.target as Node)
-      ) {
-        setShowSearchDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const handleLogout = () => {
     signOut({ callbackUrl: "/login" });
   };
 
-  const handleSearchSubmit = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (searchQuery.trim()) {
-      setShowSearchDropdown(false);
-      router.push(`/dashboard/search?q=${encodeURIComponent(searchQuery)}`);
-    }
-  };
   return (
     <header className="h-20 bg-background/80 backdrop-blur-xl border-b border-border sticky top-0 z-50 px-8 flex items-center justify-between transition-colors duration-300">
-      {/* Spacer to keep layout balanced */}
       <div className="hidden md:block w-1/3" />
 
-      {/* Right Actions */}
       <div className="flex items-center gap-5">
-        {/* Theme Toggle */}
+        <LanguageToggle />
+
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           className="p-2.5 text-muted-foreground hover:text-foreground transition-all rounded-xl border border-transparent hover:bg-muted focus:outline-none"
           aria-label="Toggle Dark Mode"
         >
           {mounted ? (
-            theme === "dark" ? (
-              <Sun size={20} />
-            ) : (
-              <Moon size={20} />
-            )
+            theme === "dark" ? <Sun size={20} /> : <Moon size={20} />
           ) : (
             <div className="w-5 h-5" />
           )}
@@ -194,15 +70,15 @@ export default function Header() {
                 : "bg-card border-border hover:border-primary/30 hover:bg-muted"
             }`}
           >
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20 active:scale-95 transition-transform">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/20">
               <User size={16} />
             </div>
             <div className="hidden md:flex flex-col items-start leading-tight">
               <span className="text-[11px] font-bold text-foreground truncate max-w-[120px]">
-                {userData.fullname || userData.name || "Administrateur"}
+                {userData.fullname || userData.name || (userData.role === "admin" ? t.dashboard.admin : t.dashboard.manager)}
               </span>
               <span className="text-[9px] font-medium text-muted-foreground truncate max-w-[120px]">
-                {userData.email || "session active"}
+                {userData.email || "Session active"}
               </span>
             </div>
             <ChevronDown
@@ -211,15 +87,10 @@ export default function Header() {
             />
           </button>
 
-          {/* Profile Dropdown */}
           {isProfileOpen && (
             <>
-              <div
-                className="fixed inset-0 z-[-1]"
-                onClick={() => setIsProfileOpen(false)}
-              />
+              <div className="fixed inset-0 z-[-1]" onClick={() => setIsProfileOpen(false)} />
               <div className="absolute right-0 mt-3 w-80 bg-card border border-border rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                {/* User Info Header */}
                 <div className="p-6 bg-muted/30 border-b border-border">
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
@@ -227,17 +98,16 @@ export default function Header() {
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-sm font-bold text-foreground truncate">
-                        {userData.fullname || userData.name || "Administrateur"}
+                        {userData.fullname || userData.name || (userData.role === "admin" ? t.dashboard.admin : t.dashboard.manager)}
                       </h4>
                       <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5 mt-0.5">
                         <Mail size={12} className="text-primary/70" />
-                        {userData.email || "session active"}
+                        {userData.email || "---"}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Actions */}
                 <div className="p-2">
                   <button
                     onClick={() => {
@@ -248,19 +118,16 @@ export default function Header() {
                   >
                     <div className="flex items-center gap-1.5">
                       <User size={18} />
-                      <span className="text-sm font-semibold">Mon profil</span>
+                      <span className="text-sm font-semibold">{t.common.profile}</span>
                     </div>
                   </button>
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all duration-300 group/logout"
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-destructive hover:bg-destructive hover:text-white transition-all duration-300 group/logout"
                   >
                     <div className="flex items-center gap-1.5">
-                      <LogOut
-                        size={18}
-                        className="group-hover/logout:-translate-x-1 transition-transform"
-                      />
-                      <span className="text-sm font-semibold">Déconnexion</span>
+                      <LogOut size={18} className="group-hover/logout:-translate-x-1 transition-transform" />
+                      <span className="text-sm font-semibold">{t.common.logout}</span>
                     </div>
                   </button>
                 </div>

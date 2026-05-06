@@ -1,35 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  Plus,
-  X,
-  Loader2,
-  AlertCircle,
-  UserCheck,
-  Mail,
-  Shield,
-  ShieldOff,
-  UserPlus,
-  Edit2,
-  Trash2,
-  Search,
-  Key,
-  MapPin,
-  Globe,
-  RefreshCcw,
+import { useState, useEffect } from "react";
+import { 
+  Trash2, Edit, Plus, Search, UserCheck, Mail, MapPin, 
+  Loader2, Shield, ShieldOff, AlertCircle, CheckCircle2, 
+  UserX, X, RefreshCcw, Key, Globe, Edit2 
 } from "lucide-react";
 import { TUNISIA_CITIES } from "@/app/lib/constants/tunisia-cities";
-import { toast } from "react-hot-toast";
+import toast from "react-hot-toast";
+import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
 export default function UsersPage() {
+  const { t } = useLanguage();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [formData, setFormData] = useState({
     fullname: "",
     email: "",
@@ -40,31 +32,28 @@ export default function UsersPage() {
     city: "",
     isActive: true,
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
-  const fetchData = async () => {
-    try {
-      // Fetch Users
-      const usersRes = await fetch("/api/backend/users", { cache: "no-store" });
-      if (!usersRes.ok)
-        throw new Error("Erreur de récupération des utilisateurs");
-      const usersData = await usersRes.json();
-      // Filter for managers only for this management page
-      setUsers(usersData.filter((u: any) => u.role === "manager"));
-    } catch (err: any) {
-      setError(err.message || "Erreur de connexion serveur");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/backend/users", { cache: "no-store" });
+      if (!res.ok) throw new Error("Erreur serveur");
+      const data = await res.json();
+      setUsers(data.filter((u: any) => u.role === "manager"));
+    } catch (err: any) {
+      setError("Impossible de charger les managers.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,18 +64,22 @@ export default function UsersPage() {
         : "/api/backend/users/create";
       const method = isEditing ? "PUT" : "POST";
 
+      // Si c'est une édition et que le password est vide, on l'enlève du body
+      const body: any = { ...formData };
+      if (isEditing && !body.password) {
+        delete body.password;
+      }
+
       const res = await fetch(url, {
-        method: method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
 
-      if (!res.ok)
-        throw new Error(
-          `Erreur lors de la ${isEditing ? "modification" : "création"} du manager`,
-        );
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || "Une erreur est survenue");
+      }
 
       setSubmitSuccess(true);
       fetchData();
@@ -94,6 +87,7 @@ export default function UsersPage() {
         setIsModalOpen(false);
         setSubmitSuccess(false);
         setIsEditing(false);
+        setEditingUserId(null);
         setFormData({
           fullname: "",
           email: "",
@@ -112,20 +106,16 @@ export default function UsersPage() {
     }
   };
 
-
-  
   const toggleActive = async (user: any) => {
     try {
       const res = await fetch(`/api/backend/users/${user._id || user.id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: !user.isActive }),
       });
-      if (!res.ok) throw new Error("Erreur lors de la mise à jour du statut");
+      if (!res.ok) throw new Error("Erreur lors de la mise à jour");
       fetchData();
-      toast.success(user.isActive ? "Compte désactivé" : "Compte activé");
+      toast.success(user.isActive ? t.auth.error_deactivated : "Compte activé");
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -135,9 +125,7 @@ export default function UsersPage() {
     try {
       const res = await fetch(`/api/backend/users/${user._id || user.id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ canDiffuse: !user.canDiffuse }),
       });
       if (!res.ok) throw new Error("Erreur lors de la mise à jour");
@@ -163,6 +151,7 @@ export default function UsersPage() {
       fetchData();
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
+      toast.success("Manager supprimé");
     } catch (err: any) {
       toast.error(err.message || "Impossible de supprimer cet utilisateur");
     } finally {
@@ -172,66 +161,68 @@ export default function UsersPage() {
 
   const filteredUsers = users.filter(
     (user) =>
-      (user.fullname || user.name || "")
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      (user.email || "").toLowerCase().includes(searchQuery.toLowerCase()),
+      (user.fullname || user.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.email || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
-      <div className="flex justify-between items-center">
+    <div className="space-y-8 animate-in fade-in duration-700">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight">
-            Gestion des Managers
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Inscrivez de nouveaux managers et gérez leurs permissions de
-            diffusion.
-          </p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">{t.users.title}</h1>
+          <p className="text-muted-foreground mt-1.5 font-medium">{t.users.subtitle}</p>
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <button
-            onClick={fetchData}
-            className="p-2.5 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all active:rotate-180 duration-500"
-            title="Rafraîchir"
-          >
-            <RefreshCcw size={20} />
-          </button>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-primary hover:opacity-90 text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
-          >
-            <UserPlus size={18} /> Nouveau Manager
-          </button>
+        <button
+          onClick={() => {
+            setIsEditing(false);
+            setFormData({
+              fullname: "",
+              email: "",
+              password: "",
+              role: "manager",
+              canDiffuse: false,
+              address: "",
+              city: "",
+              isActive: true,
+            });
+            setIsModalOpen(true);
+          }}
+          className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-primary text-primary-foreground rounded-2xl font-bold shadow-lg shadow-primary/25 hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+        >
+          <Plus size={20} />
+          {t.users.add_button}
+        </button>
+      </div>
+
+      {/* Search Bar */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2 relative group">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search size={20} className="text-muted-foreground group-focus-within:text-primary transition-colors" />
+          </div>
+          <input
+            type="text"
+            placeholder={t.users.search_placeholder}
+            className="w-full pl-12 pr-4 py-4 bg-card/50 border border-border rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all duration-300 font-medium"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className="hidden md:flex items-center justify-end">
+          <span className="text-sm font-bold text-muted-foreground bg-muted px-4 py-2 rounded-full">
+            {filteredUsers.length} Managers
+          </span>
         </div>
       </div>
 
-      <div className="soft-card overflow-hidden min-h-[400px] flex flex-col transition-colors shadow-sm">
-        <div className="p-4 border-b border-border flex justify-between items-center bg-muted/30 transition-colors">
-          <div className="relative w-72 group">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Rechercher un manager..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl py-2 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/60"
-            />
-          </div>
-          <span className="text-sm font-medium text-muted-foreground">
-            {filteredUsers.length} managers au total
-          </span>
-        </div>
-
-        <div className="flex-1 p-0">
+      {/* Users Table */}
+      <div className="soft-card overflow-hidden min-h-[400px] flex flex-col shadow-sm">
+        <div className="flex-1 p-0 overflow-x-auto">
           {loading ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-muted-foreground">
               <Loader2 className="animate-spin text-primary mb-4" size={32} />
-              <p>Chargement des managers...</p>
+              <p>{t.common.loading}</p>
             </div>
           ) : error ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-destructive">
@@ -239,403 +230,113 @@ export default function UsersPage() {
               <p>{error}</p>
             </div>
           ) : filteredUsers.length === 0 ? (
-            <div className="h-full w-full flex flex-col items-center justify-center p-20 text-muted-foreground">
-              <UserCheck size={48} className="mb-4 opacity-50" />
-              <p>
-                {searchQuery
-                  ? "Aucun manager ne correspond à votre recherche."
-                  : "Aucun manager trouvé."}
-              </p>
+            <div className="h-full w-full flex flex-col items-center justify-center p-20 text-muted-foreground text-center">
+              <UserX size={48} className="mb-4 opacity-50 mx-auto" />
+              <p>{t.common.no_data}</p>
             </div>
           ) : (
             <table className="w-full text-left text-sm text-muted-foreground">
-              <thead className="bg-muted/50 text-xs uppercase font-medium text-muted-foreground border-b border-border transition-colors">
+              <thead className="bg-muted/50 text-xs uppercase font-medium text-muted-foreground border-b border-border">
                 <tr>
-                  <th scope="col" className="px-6 py-4">
-                    Nom Complet
-                  </th>
-                  <th scope="col" className="px-6 py-4">
-                    Ville / Zone
-                  </th>
-                  <th scope="col" className="px-6 py-4">
-                    Email
-                  </th>
-                  <th scope="col" className="px-6 py-4 text-center">
-                    Statut Compte
-                  </th>
-                  <th scope="col" className="px-6 py-4 text-center">
-                    Autorisation Diffusion
-                  </th>
-                  <th scope="col" className="px-6 py-4 text-right">
-                    Actions
-                  </th>
+                  <th scope="col" className="px-6 py-4">{t.users.table.name}</th>
+                  <th scope="col" className="px-6 py-4">{t.dashboard.screens} (Zone)</th>
+                  <th scope="col" className="px-6 py-4">{t.users.table.email}</th>
+                  <th scope="col" className="px-6 py-4 text-center">{t.users.table.status}</th>
+                  <th scope="col" className="px-6 py-4 text-center">{t.users.table.permissions}</th>
+                  <th scope="col" className="px-6 py-4 text-right">{t.dashboard.actions}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/40 transition-colors">
-                {filteredUsers.map((user: any) => {
-                  return (
-                    <tr
-                      key={user._id || user.id}
-                      className="hover:bg-muted/30 transition-colors group"
-                    >
-                      <td className="px-6 py-4 font-medium text-foreground">
-                        {user.fullname || user.name}
-                      </td>
-                      <td className="px-6 py-4 font-bold text-primary">
-                        {user.city || "—"}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <Mail size={14} className="text-muted-foreground" />
-                          {user.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-center">
-                          <button
-                            onClick={() => toggleActive(user)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold transition-all border ${
-                              user.isActive !== false
-                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
-                                : "bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20"
-                            }`}
-                          >
-                            <div className={`h-1.5 w-1.5 rounded-full ${user.isActive !== false ? "bg-emerald-500" : "bg-red-500"}`} />
-                            {user.isActive !== false ? "ACTIF" : "DÉSACTIVÉ"}
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-center">
-                          <button
-                            onClick={() => toggleDiffusion(user)}
-                            className={`group relative flex items-center gap-3 px-6 py-2.5 rounded-2xl text-xs font-bold transition-all duration-300 border ${
-                              user.canDiffuse
-                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/20 hover:border-emerald-500/50 shadow-lg shadow-emerald-500/10"
-                                : "bg-muted text-muted-foreground border-border hover:bg-muted/80 hover:text-foreground hover:border-muted-foreground/30 shadow-none"
-                            }`}
-                          >
-                            <div
-                              className={`h-2 w-2 rounded-full animate-pulse mr-1 ${user.canDiffuse ? "bg-emerald-500" : "bg-muted-foreground/30"}`}
-                            />
-                            {user.canDiffuse ? (
-                              <span className="tracking-wide">
-                                DIFFUSION ACTIVÉE
-                              </span>
-                            ) : (
-                              <span className="tracking-wide">
-                                DIFFUSION DÉSACTIVÉE
-                              </span>
-                            )}
-                            <div
-                              className={`ml-2 p-1 rounded-lg transition-colors ${user.canDiffuse ? "bg-emerald-500/20 text-emerald-600" : "bg-muted-foreground/10 text-muted-foreground group-hover:text-foreground"}`}
-                            >
-                              {user.canDiffuse ? (
-                                <Shield size={14} />
-                              ) : (
-                                <ShieldOff size={14} />
-                              )}
-                            </div>
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right space-x-2">
-                        <button
-                          onClick={() => {
-                            setEditingUserId(user._id || user.id);
-                            setIsEditing(true);
-                            setFormData({
-                              fullname: user.fullname || user.name || "",
-                              email: user.email || "",
-                              password: "", // Pass empty if not changing
-                              role: user.role || "manager",
-                              canDiffuse: user.canDiffuse || false,
-                              address: user.address || "",
-                              city: user.city || "",
-                              isActive: user.isActive !== false,
-                            });
-                            setIsModalOpen(true);
-                          }}
-                          className="p-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors border border-primary/20"
-                          title="Modifier"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(user._id || user.id)}
-                          className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors border border-destructive/20"
-                          title="Supprimer"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+              <tbody className="divide-y divide-border/40">
+                {filteredUsers.map((user: any) => (
+                  <tr key={user._id || user.id} className="hover:bg-muted/30 transition-colors group">
+                    <td className="px-6 py-4 font-medium text-foreground">{user.fullname || user.name}</td>
+                    <td className="px-6 py-4 font-bold text-primary">{user.city || "—"}</td>
+                    <td className="px-6 py-4"><div className="flex items-center gap-2"><Mail size={14}/> {user.email}</div></td>
+                    <td className="px-6 py-4 text-center">
+                      <button onClick={() => toggleActive(user)} className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-all ${user.isActive ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"}`}>
+                        {user.isActive ? t.users.table.active : t.users.table.deactivated}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <button onClick={() => toggleDiffusion(user)} className={`p-2 rounded-xl transition-all ${user.canDiffuse ? "text-emerald-500 bg-emerald-500/10" : "text-muted-foreground bg-muted"}`}>
+                        {user.canDiffuse ? <Shield size={18} /> : <ShieldOff size={18} />}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      <button onClick={() => { setEditingUserId(user._id || user.id); setIsEditing(true); setFormData({ ...user, password: "" }); setIsModalOpen(true); }} className="p-2 text-primary hover:bg-primary/10 rounded-lg"><Edit size={16}/></button>
+                      <button onClick={() => handleDeleteClick(user._id || user.id)} className="p-2 text-destructive hover:bg-destructive/10 rounded-lg"><Trash2 size={16}/></button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           )}
         </div>
       </div>
 
-      {/* Modal - Nouveau manager */}
+      {/* Modal Form */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-          <div
-            className="absolute inset-0 bg-background/60 backdrop-blur-md"
-            onClick={() =>
-              !isSubmitting && !submitSuccess && setIsModalOpen(false)
-            }
-          />
-          <div className="relative w-full max-w-md max-h-[92vh] bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
-            <div className="flex justify-between items-center p-4 sm:p-6 border-b border-border bg-muted/30 shrink-0">
-              <div>
-                <h2 className="text-xl font-bold text-foreground">
-                  {isEditing ? "Modifier le Manager" : "Nouveau Manager"}
-                </h2>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {isEditing
-                    ? "Mettez à jour les informations du manager."
-                    : "Créez un compte pour un nouveau manager."}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  if (!isSubmitting && !submitSuccess) {
-                    setIsModalOpen(false);
-                    setIsEditing(false);
-                    setEditingUserId(null);
-                    setFormData({
-                      fullname: "",
-                      email: "",
-                      password: "",
-                      role: "manager",
-                      canDiffuse: false,
-                      address: "",
-                      city: "",
-                      isActive: true,
-                    });
-                  }
-                }}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X size={20} />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-md" onClick={() => !isSubmitting && setIsModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-6 border-b border-border bg-muted/30">
+              <h2 className="text-xl font-bold">{isEditing ? t.users.modal.edit_title : t.users.modal.add_title}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-foreground"><X size={20}/></button>
             </div>
 
             {submitSuccess ? (
-              <div className="p-12 flex flex-col items-center justify-center text-center animate-in fade-in">
-                <div className="h-16 w-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-4 border border-emerald-500/20">
-                  <UserCheck size={32} />
+              <div className="p-12 text-center animate-in fade-in">
+                <div className="h-16 w-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-4 mx-auto border border-emerald-500/20">
+                  <CheckCircle2 size={32} />
                 </div>
-                <h3 className="text-lg font-medium text-foreground mb-2">
-                  {isEditing
-                    ? "Modifié avec succès !"
-                    : "Compte créé avec succès !"}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {isEditing
-                    ? "Les informations ont été mises à jour."
-                    : "Le manager peut maintenant se connecter."}
-                </p>
+                <h3 className="text-lg font-bold">{isEditing ? t.dashboard.save : t.users.modal.creating}</h3>
               </div>
             ) : (
-              <form
-                onSubmit={handleSubmit}
-                className="p-4 sm:p-6 space-y-4 overflow-y-auto"
-              >
+              <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    Nom Complet
-                  </label>
-                  <input
-                    required
-                    type="text"
-                    value={formData.fullname}
-                    onChange={(e) =>
-                      setFormData({ ...formData, fullname: e.target.value })
-                    }
-                    placeholder="Prénom Nom"
-                    className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/40"
-                  />
+                  <label className="text-sm font-bold text-muted-foreground">{t.users.modal.fullname}</label>
+                  <input required type="text" value={formData.fullname} onChange={(e) => setFormData({...formData, fullname: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary" />
                 </div>
-
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Mail size={16} className="text-primary" />
-                    Email
-                  </label>
-                  <input
-                    required
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    placeholder="email@exemple.com"
-                    className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/40"
-                  />
+                  <label className="text-sm font-bold text-muted-foreground">{t.users.modal.email}</label>
+                  <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary" />
                 </div>
-
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Key size={16} className="text-primary" />
-                    Mot de passe{" "}
-                    {isEditing && (
-                      <span className="text-[10px] opacity-70">
-                        (laisser vide pour ne pas changer)
-                      </span>
-                    )}
-                  </label>
-                  <input
-                    required={!isEditing}
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
-                    placeholder="••••••••"
-                    className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/40"
-                  />
+                  <label className="text-sm font-bold text-muted-foreground">{t.users.modal.password} {isEditing && <span className="text-[10px] opacity-70">{t.users.modal.password_hint}</span>}</label>
+                  <input required={!isEditing} type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary" />
                 </div>
-
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Globe size={16} className="text-primary" />
-                    Ville (Gouvernorat) de gestion
-                  </label>
-                  <select
-                    required
-                    value={formData.city}
-                    onChange={(e) =>
-                      setFormData({ ...formData, city: e.target.value })
-                    }
-                    className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                  >
-                    <option value="">Sélectionnez une ville...</option>
-                    {TUNISIA_CITIES.map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
-                    ))}
+                  <label className="text-sm font-bold text-muted-foreground">{t.users.modal.city}</label>
+                  <select required value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary">
+                    <option value="">Sélectionnez...</option>
+                    {TUNISIA_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-
-
-
-                <div className="space-y-4 pt-2">
-                  <div className="grid grid-cols-2 gap-4 pt-2">
-                    {/* Diffusion Permission */}
-                    <div className="flex items-center justify-between p-3 bg-muted/50 border border-border rounded-2xl transition-all hover:border-primary/30 group">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-1.5 rounded-lg transition-colors ${formData.canDiffuse ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"}`}>
-                          {formData.canDiffuse ? <Shield size={16} /> : <ShieldOff size={16} />}
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-foreground tracking-tight">Diffusion</p>
-                          <p className="text-[8px] text-muted-foreground">Autoriser</p>
-                        </div>
-                      </div>
-                      <button type="button" onClick={() => setFormData({ ...formData, canDiffuse: !formData.canDiffuse })}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${formData.canDiffuse ? "bg-primary" : "bg-muted-foreground/30"}`}
-                      >
-                        <span className={`inline-block h-3 w-3 transform rounded-full bg-background transition-transform ${formData.canDiffuse ? "translate-x-5" : "translate-x-1"}`} />
-                      </button>
-                    </div>
-
-                    {/* Account Active */}
-                    <div className="flex items-center justify-between p-3 bg-muted/50 border border-border rounded-2xl transition-all hover:border-primary/30 group">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-1.5 rounded-lg transition-colors ${formData.isActive ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"}`}>
-                          {formData.isActive ? <UserCheck size={16} /> : <AlertCircle size={16} />}
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold text-foreground tracking-tight">État Compte</p>
-                          <p className="text-[8px] text-muted-foreground">{formData.isActive ? "Actif" : "Désactivé"}</p>
-                        </div>
-                      </div>
-                      <button type="button" onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${formData.isActive ? "bg-emerald-500" : "bg-red-500"}`}
-                      >
-                        <span className={`inline-block h-3 w-3 transform rounded-full bg-background transition-transform ${formData.isActive ? "translate-x-5" : "translate-x-1"}`} />
-                      </button>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-3 pt-4">
+                  <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({...formData, isActive: e.target.checked})} className="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
+                  <label className="text-sm font-bold text-foreground">{t.users.modal.active_status}</label>
                 </div>
-
-                <div className="pt-4 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="bg-primary hover:opacity-90 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />{" "}
-                        {isEditing ? "Mise à jour..." : "Création..."}
-                      </>
-                    ) : isEditing ? (
-                      "Enregistrer"
-                    ) : (
-                      "Créer le compte"
-                    )}
-                  </button>
-                </div>
+                <button type="submit" disabled={isSubmitting} className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl font-bold shadow-lg shadow-primary/20 hover:opacity-90 disabled:opacity-50 transition-all mt-4">
+                  {isSubmitting ? t.common.loading : (isEditing ? t.dashboard.save : t.dashboard.add)}
+                </button>
               </form>
             )}
           </div>
         </div>
       )}
-      {/* Modal de suppression */}
+
+      {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-background/60 backdrop-blur-md"
-            onClick={() => !isDeleting && setIsDeleteModalOpen(false)}
-          />
-          <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl p-6 animate-in zoom-in-95 duration-200">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center text-destructive">
-                <AlertCircle size={24} />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-foreground">
-                  Supprimer le manager ?
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                 Cette action supprimera définitivement cet établissement et ses données.
-                </p>
-              </div>
-              <div className="flex items-center gap-3 w-full pt-4">
-                <button
-                  onClick={() => setIsDeleteModalOpen(false)}
-                  disabled={isDeleting}
-                  className="flex-1 px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  disabled={isDeleting}
-                  className="flex-1 bg-destructive hover:opacity-90 text-destructive-foreground px-4 py-2 rounded-xl text-sm font-medium transition-all shadow-lg shadow-destructive/20 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isDeleting ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      Suppression...
-                    </>
-                  ) : (
-                    "Supprimer"
-                  )}
-                </button>
-              </div>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setIsDeleteModalOpen(false)} />
+          <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-2xl animate-in zoom-in-95">
+            <h2 className="text-xl font-bold text-destructive mb-2">{t.users.delete_confirm.title}</h2>
+            <p className="text-muted-foreground text-sm mb-6">{t.users.delete_confirm.message}</p>
+            <div className="flex gap-3">
+              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-3 border border-border rounded-xl font-bold hover:bg-muted transition-all">{t.dashboard.cancel}</button>
+              <button onClick={confirmDelete} disabled={isDeleting} className="flex-1 py-3 bg-destructive text-white rounded-xl font-bold hover:bg-destructive/90 transition-all disabled:opacity-50">
+                {isDeleting ? t.users.delete_confirm.deleting : t.users.delete_confirm.confirm}
+              </button>
             </div>
           </div>
         </div>
@@ -643,5 +344,3 @@ export default function UsersPage() {
     </div>
   );
 }
-
-

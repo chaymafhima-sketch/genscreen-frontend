@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MoreHorizontal, PlayCircle, Clock, AlertCircle, Loader2 } from "lucide-react";
+import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
 export default function ContentManager() {
+  const { t } = useLanguage();
   const [contents, setContents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -32,26 +34,25 @@ export default function ContentManager() {
   }, []);
 
   const getStatusBadge = (status?: string) => {
-    // Si la bdd n'a pas encoré de statut, on met un statut par défaut
     const currentStatus = status || "Actif"; 
     
     switch (currentStatus) {
       case "Actif":
         return (
           <span className="flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <PlayCircle size={12} /> Actif
+            <PlayCircle size={12} /> {t.content.table.active}
           </span>
         );
       case "En attente":
         return (
           <span className="flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-orange-500/10 text-orange-400 border border-orange-500/20">
-            <Clock size={12} /> En attente
+            <Clock size={12} /> {t.common.loading}
           </span>
         );
       case "Erreur":
         return (
           <span className="flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
-            <AlertCircle size={12} /> Erreur
+            <AlertCircle size={12} /> {t.common.error}
           </span>
         );
       default:
@@ -82,17 +83,17 @@ export default function ContentManager() {
         <table className="w-full text-left text-sm text-muted-foreground">
           <thead className="bg-muted/50 text-xs uppercase font-medium text-muted-foreground border-b border-border transition-colors">
             <tr>
-              <th scope="col" className="px-6 py-4">Nom du Contenu</th>
+              <th scope="col" className="px-6 py-4">{t.content.table.media}</th>
               <th scope="col" className="px-6 py-4">Type</th>
-              <th scope="col" className="px-6 py-4">Statut</th>
-              <th scope="col" className="px-6 py-4">Créé le</th>
+              <th scope="col" className="px-6 py-4">{t.content.table.status}</th>
+              <th scope="col" className="px-6 py-4">{t.content.table.created_at}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40 transition-colors">
             {contents.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
-                  Aucun contenu trouvé.
+                  {t.common.no_data}
                 </td>
               </tr>
             ) : (
