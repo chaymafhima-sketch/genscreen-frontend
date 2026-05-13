@@ -8,6 +8,8 @@ import {
   ChevronDown,
   Sun,
   Moon,
+  Search,
+  Command,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -17,9 +19,25 @@ import LanguageToggle from "@/app/components/LanguageToggle";
 
 export default function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { data: session } = useSession();
   const { t } = useLanguage();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const isOverviewPage = pathname === "/dashboard/admin" || pathname === "/dashboard/manager";
+
+  useEffect(() => {
+    if (!isOverviewPage) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOverviewPage]);
 
   const userData = ((session as any)?.user || {}) as {
     name?: string;
@@ -42,7 +60,34 @@ export default function Header() {
 
   return (
     <header className="h-20 bg-background/80 backdrop-blur-xl border-b border-border sticky top-0 z-50 px-8 flex items-center justify-between transition-colors duration-300">
-      <div className="hidden md:block w-1/3" />
+      <div className="hidden md:flex w-1/3 items-center">
+        {isOverviewPage && (
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              const q = (e.currentTarget.elements.namedItem('q') as HTMLInputElement).value;
+              if (q.trim()) router.push(`/dashboard/search?q=${encodeURIComponent(q)}`);
+            }}
+            className="relative w-full max-w-sm lg:max-w-md group transition-all duration-300 focus-within:max-w-xl"
+          >
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors">
+              <Search size={18} />
+            </div>
+            <input
+              ref={searchInputRef}
+              name="q"
+              type="text"
+              placeholder={t.dashboard.search}
+              className="w-full bg-muted/40 border border-border/50 text-foreground text-sm rounded-xl pl-12 pr-12 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 focus:bg-background transition-all placeholder:text-muted-foreground/50 shadow-inner"
+            />
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <kbd className="hidden sm:flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground bg-muted border border-border rounded-md shadow-sm group-focus-within:opacity-0 transition-opacity">
+                <Command size={10} /> K
+              </kbd>
+            </div>
+          </form>
+        )}
+      </div>
 
       <div className="flex items-center gap-5">
         <LanguageToggle />

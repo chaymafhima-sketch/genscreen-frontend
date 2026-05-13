@@ -13,7 +13,7 @@
   --popover: #ffffff;
   --popover-foreground: #0f172a;
   
-  --primary: #4338ca; /* Indigo 700 - clearer on light backgrounds */
+  --primary: #312e81; /* Indigo 900 - much deeper and more professional in light mode */
   --primary-foreground: #ffffff;
   
   --secondary: #e2e8f0; /* Slate 200 - more separation in light mode */
@@ -27,10 +27,13 @@
   
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
+
+  --success: #047857; /* Emerald 700 - darker and clearer in light mode */
+  --success-foreground: #ffffff;
   
   --border: #cbd5e1; /* Slate 300 - visible against Slate 100 background */
   --input: #cbd5e1;
-  --ring: #4338ca;
+  --ring: #312e81;
   
   --radius: 0.75rem;
 }
@@ -60,6 +63,9 @@
   
   --destructive: #7f1d1d;
   --destructive-foreground: #f8fafc;
+
+  --success: #10b981; /* Emerald 500 - vibrant for dark mode */
+  --success-foreground: #ffffff;
   
   --border: #1e293b; /* Slate 800 */
   --input: #1e293b;
@@ -83,6 +89,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -132,4 +140,16 @@ body {
 .dark .glass {
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Toast slide-in animation */
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }

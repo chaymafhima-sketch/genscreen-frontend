@@ -3,11 +3,11 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { AUTH_SECRET } from "@/lib/auth";
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Allow NextAuth routes and public pages
-  if (pathname.startsWith("/api/auth") || pathname.startsWith("/login")) {
+  // Allow NextAuth routes, backend API, and public pages
+  if (pathname.startsWith("/api/auth") || pathname.startsWith("/api/backend") || pathname.startsWith("/login")) {
     return NextResponse.next();
   }
 

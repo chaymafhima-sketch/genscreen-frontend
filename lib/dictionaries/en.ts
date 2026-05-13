@@ -15,6 +15,21 @@ export const en: Dictionary = {
     brand_title: "Dynamic signage,",
     brand_highlight: "reinvented.",
     brand_subtitle: "Create, manage, and broadcast your content with absolute precision. Join our next-generation platform.",
+    forgot_password_link: "Forgot password?",
+    forgot_password_title: "Forgot Password",
+    forgot_password_subtitle: "Enter your email to receive a reset link.",
+    reset_password_title: "Reset Password",
+    reset_password_subtitle: "Choose a new password for your account.",
+    email_label: "Email address",
+    new_password_label: "New Password",
+    confirm_password_label: "Confirm Password",
+    send_link_button: "Send Link",
+    reset_button: "Reset Password",
+    back_to_login: "Back to Login",
+    success_forgot_password: "A reset link has been sent to your email address.",
+    error_email_not_found: "This email does not have an account.",
+    success_reset_password: "Your password has been successfully reset.",
+    error_passwords_dont_match: "Passwords do not match.",
   },
   dashboard: {
     overview: "Overview",
@@ -37,7 +52,6 @@ export const en: Dictionary = {
     active_session: "Active session",
     admin: "Administrator",
     manager: "Manager",
-    recent_activity: "Recent Activity",
     stats: {
       partners: "PARTNER ESTABLISHMENTS",
       managers: "MANAGERS",
@@ -56,7 +70,6 @@ export const en: Dictionary = {
     search_placeholder: "Search an establishment...",
     table: {
       name: "NAME",
-      city: "CITY",
       assigned_users: "ASSIGNED USERS",
       contact: "CONTACT NUMBER",
       no_user: "No user",
@@ -76,6 +89,16 @@ export const en: Dictionary = {
       online: "ONLINE",
       offline: "OFFLINE",
       no_stream: "NO STREAM",
+    },
+    card: {
+      pairing_code: "PAIRING CODE",
+      last_activity: "LAST ACTIVITY",
+      ip_address: "IP ADDRESS",
+      serial_number: "S/N",
+      details_playlist: "Details & Playlist",
+      to_pair: "TO PAIR",
+      not_linked: "Not linked",
+      unknown: "Unknown",
     }
   },
   content: {
@@ -105,9 +128,9 @@ export const en: Dictionary = {
     },
     events: {
       content_broadcast: "Content Broadcast",
-      agency_mod: "Agency Modification",
+      etablissement_mod: "Establishment Modification",
       manager_mod: "Manager Modification",
-      perm_change: "Permission Change",
+      diff_change: "Diffusion Change",
     }
   },
   users: {
@@ -119,7 +142,7 @@ export const en: Dictionary = {
       name: "Full Name",
       email: "Email",
       status: "Account Status",
-      permissions: "Permissions",
+      diffusions: "Broadcasts",
       active: "ACTIVE",
       deactivated: "DEACTIVATED",
       diffusion_on: "DIFFUSION ON",
@@ -133,8 +156,8 @@ export const en: Dictionary = {
       password: "Password",
       password_hint: "(Leave empty to keep unchanged)",
       address: "Address",
-      city: "City",
       active_status: "Active account",
+      can_diffuse: "Broadcast authorization",
       creating: "Creating...",
       updating: "Updating...",
     },
@@ -143,7 +166,8 @@ export const en: Dictionary = {
       message: "Are you sure you want to delete this user? This action cannot be undone.",
       confirm: "Delete",
       deleting: "Deleting...",
-    }
+    },
+    edit_success: "Modified successfully",
   },
   common: {
     loading: "Loading...",
@@ -160,7 +184,7 @@ export const en: Dictionary = {
     title: "My Profile",
     subtitle: "Manage your personal information and settings.",
     full_name: "Full Name",
-    city: "City",
     address: "Address",
+    email: "Email",
   }
 };

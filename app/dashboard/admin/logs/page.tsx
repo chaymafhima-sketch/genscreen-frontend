@@ -10,7 +10,8 @@ import {
   RefreshCw,
   Terminal,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Search
 } from "lucide-react";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
@@ -41,6 +42,7 @@ export default function LogsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
 
   const fetchUsers = async () => {
@@ -148,26 +150,35 @@ export default function LogsPage() {
           <p className="text-muted-foreground">{t.history.subtitle}</p>
         </div>
         
-        <div className="flex flex-wrap gap-4 w-full lg:w-auto">
-          <div className="flex-1 lg:flex-none flex items-center gap-4 bg-muted/50 border border-border p-3 px-5 rounded-2xl shadow-sm">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase">Alerts</span>
-              <span className="text-xl font-bold text-destructive">{stats.errors}</span>
-            </div>
-            <div className="h-10 w-px bg-border" />
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase">Total</span>
-              <span className="text-xl font-bold text-foreground">{stats.total}</span>
-            </div>
-          </div>
-        </div>
+
       </div>
 
-      <div className="flex justify-end items-center">
-        <button onClick={handleRefresh} className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-card border border-border text-muted-foreground hover:text-primary transition-all soft-card">
-          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-          <span className="text-sm font-medium">{t.common.refresh}</span>
-        </button>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-3 bg-muted/40 p-2 rounded-2xl border border-border transition-colors w-full">
+        <div className="relative flex-1 group">
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder={t.history.subtitle}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-background border border-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground"
+          />
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handleRefresh}
+            title={t.common.refresh}
+            className="h-10 w-10 bg-card border border-border rounded-xl flex items-center justify-center transition-all hover:bg-muted/50 active:scale-[0.98] group shadow-sm"
+          >
+            <div className={`text-primary flex items-center justify-center transition-transform duration-500 ${isRefreshing ? "animate-spin" : "group-active:rotate-180"}`}>
+              <RefreshCw size={18} />
+            </div>
+          </button>
+        </div>
       </div>
 
       <div className="soft-card overflow-hidden min-h-[500px] flex flex-col shadow-none">
@@ -183,8 +194,16 @@ export default function LogsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40 font-mono text-[13px]">
-              {logs.length > 0 ? (
-                logs.map((log) => {
+              {logs.filter(log => 
+                (log.action || log.event || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (log.user || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (log.source || log.module || "").toLowerCase().includes(searchQuery.toLowerCase())
+              ).length > 0 ? (
+                logs.filter(log => 
+                  (log.action || log.event || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (log.user || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (log.source || log.module || "").toLowerCase().includes(searchQuery.toLowerCase())
+                ).map((log) => {
                   const type = log.type || eventToType(log.action || log.event || '');
                   const actorName = log.user || (log.actorUserId && usersMap[log.actorUserId]) || (log.actorRole ? `${log.actorRole.toUpperCase()}` : "Système");
                   const eventName = log.action || log.event || "---";

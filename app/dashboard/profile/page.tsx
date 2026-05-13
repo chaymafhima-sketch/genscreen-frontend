@@ -73,7 +73,7 @@ export default function ProfilePage() {
       <div className="soft-card p-8 max-w-3xl">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="p-4 rounded-xl bg-muted/40 border border-border">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2"><Mail size={14} /> Email</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2"><Mail size={14} /> {t.profile.email}</p>
             <p className="text-sm font-medium text-foreground">{profile?.email || "—"}</p>
           </div>
           <div className="p-4 rounded-xl bg-muted/40 border border-border">
@@ -87,10 +87,7 @@ export default function ProfilePage() {
             <label className="text-sm font-medium text-muted-foreground flex items-center gap-2"><User size={15} /> {t.profile.full_name}</label>
             <input value={form.fullname} onChange={(e) => setForm((p) => ({ ...p, fullname: e.target.value }))} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground flex items-center gap-2"><MapPin size={15} /> {t.profile.city}</label>
-            <input value={form.city} onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
-          </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground flex items-center gap-2"><MapPin size={15} /> {t.profile.address}</label>
             <input value={form.address} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />

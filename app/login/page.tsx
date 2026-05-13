@@ -160,6 +160,16 @@ export default function LoginPage() {
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                 />
               </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => router.push(`/forgot-password?email=${encodeURIComponent(form.email)}`)}
+                  className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  {t.auth.forgot_password_link}
+                </button>
+              </div>
             </div>
 
             <button

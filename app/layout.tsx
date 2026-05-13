@@ -15,7 +15,30 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <LanguageProvider>
             <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
               {children}
-              <Toaster position="top-right" />
+              <Toaster
+                position="bottom-left"
+                toastOptions={{
+                  duration: 3000,
+                  style: {
+                    background: 'var(--card)',
+                    color: 'var(--foreground)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '12px',
+                    padding: '10px 16px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                    maxWidth: '320px',
+                    animation: 'slideInLeft 0.3s ease-out',
+                  },
+                  success: {
+                    iconTheme: { primary: '#047857', secondary: '#fff' },
+                  },
+                  error: {
+                    iconTheme: { primary: '#ef4444', secondary: '#fff' },
+                  },
+                }}
+              />
             </ThemeProvider>
           </LanguageProvider>
         </NextAuthSessionProvider>

@@ -1,21 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { 
   Building2, 
   UserCheck,
   FileVideo, 
-  TrendingUp, 
   MonitorSmartphone,
-  ArrowUpRight,
-  TrendingDown
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
 export default function Stats() {
   const { t } = useLanguage();
-  const [data, setData] = useState({ contents: 0, établissements: 0, users: 0, screens: 0 });
+  const { data: session } = useSession();
+  const [data, setData] = useState({ 
+    contents: 0, 
+    établissements: 0, 
+    users: 0, 
+    screens: 0,
+    onlineScreens: 0,
+    offlineScreens: 0
+  });
   const [loading, setLoading] = useState(true);
+
+  const isAdmin = (session as any)?.user?.role === "admin";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,11 +42,16 @@ export default function Stats() {
         const users = resUsers.ok ? await resUsers.json() : [];
         const screens = resScreens.ok ? await resScreens.json() : [];
 
+        const online = screens.filter((s: any) => s.status === "Online" || s.status === "online").length;
+        const offline = screens.length - online;
+
         setData({
           contents: contents.length,
           établissements: etablissements.length,
           users: users.filter((u: any) => u.role === "manager").length,
           screens: screens.length,
+          onlineScreens: online,
+          offlineScreens: offline,
         });
 
       } catch (err) {
@@ -53,9 +68,7 @@ export default function Stats() {
     {
       title: t.dashboard.stats.partners,
       value: loading ? "..." : data.établissements.toString(),
-      trend: t.dashboard.stats.network,
-      trendUp: true,
-      icon: <Building2 size={20} />,
+      icon: <Building2 size={24} />,
       color: "text-indigo-400",
       bgBase: "bg-indigo-400/10",
       borderBase: "border-indigo-400/20",
@@ -64,9 +77,7 @@ export default function Stats() {
     {
       title: t.dashboard.stats.managers,
       value: loading ? "..." : data.users.toString(),
-      trend: t.dashboard.stats.users,
-      trendUp: true,
-      icon: <UserCheck size={20} />,
+      icon: <UserCheck size={24} />,
       color: "text-amber-500",
       bgBase: "bg-amber-500/10",
       borderBase: "border-amber-500/20",
@@ -75,29 +86,43 @@ export default function Stats() {
     {
       title: t.dashboard.stats.broadcasted,
       value: loading ? "..." : data.contents.toString(),
-      trend: t.dashboard.stats.library,
-      trendUp: true,
-      icon: <FileVideo size={20} />,
-      color: "text-emerald-400",
-      bgBase: "bg-emerald-400/10",
-      borderBase: "border-emerald-400/20",
-      glow: "shadow-emerald-500/10",
+      icon: <FileVideo size={24} />,
+      color: "text-success",
+      bgBase: "bg-success/10",
+      borderBase: "border-success/20",
+      glow: "shadow-success/10",
     },
     {
       title: t.dashboard.stats.registered_screens,
       value: loading ? "..." : data.screens.toString(),
-      trend: t.dashboard.stats.fleet,
-      trendUp: true,
-      icon: <MonitorSmartphone size={20} />,
+      icon: <MonitorSmartphone size={24} />,
       color: "text-violet-500",
       bgBase: "bg-violet-500/10",
       borderBase: "border-violet-500/20",
       glow: "shadow-violet-500/10",
     },
-  ];
+    {
+      title: t.screens.stats.operational,
+      value: loading ? "..." : data.onlineScreens.toString(),
+      icon: <Wifi size={24} />,
+      color: "text-success",
+      bgBase: "bg-success/10",
+      borderBase: "border-success/20",
+      glow: "shadow-success/10",
+    },
+    {
+      title: t.screens.stats.offline,
+      value: loading ? "..." : data.offlineScreens.toString(),
+      icon: <WifiOff size={24} />,
+      color: "text-red-500",
+      bgBase: "bg-red-500/10",
+      borderBase: "border-red-500/20",
+      glow: "shadow-red-500/10",
+    },
+  ].filter(stat => isAdmin || stat.title !== t.dashboard.stats.managers);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {stats.map((stat, i) => (
         <div
           key={i}
@@ -105,35 +130,23 @@ export default function Stats() {
         >
           <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-border/50 to-transparent opacity-0 group-hover:opacity-60 transition-opacity`} />
 
-          <div className="flex justify-between items-start mb-6">
-            <div className={`p-2.5 rounded-lg border ${stat.bgBase} ${stat.borderBase} ${stat.color} shadow-inner transition-transform group-hover:scale-110 duration-300`}>
-              {stat.icon}
-            </div>
-            
-            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-tight uppercase border ${
-              stat.trendUp 
-                ? 'text-emerald-500 bg-emerald-500/10 border-emerald-500/10' 
-                : 'text-red-500 bg-red-400/10 border-red-500/10'
-            }`}>
-              {stat.trendUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-              {stat.trend}
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <h3 className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase opacity-70">
+          <div className="space-y-4">
+            <h3 className="text-muted-foreground text-sm font-bold tracking-wider uppercase">
               {stat.title}
             </h3>
-            <div className="flex items-center gap-3">
-              <span className="text-3xl font-bold text-foreground tracking-tight">
+            
+            <div className="flex items-end justify-between pr-14">
+              <div className={`p-3 rounded-xl border ${stat.bgBase} ${stat.borderBase} ${stat.color} shadow-inner transition-transform group-hover:scale-110 duration-300`}>
+                {stat.icon}
+              </div>
+
+              <span className="text-4xl font-bold text-foreground tracking-tight">
                 {stat.value}
               </span>
             </div>
           </div>
 
-          <div className="absolute bottom-4 right-4 text-muted-foreground opacity-0 group-hover:opacity-40 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-             <ArrowUpRight size={24} />
-          </div>
+
         </div>
       ))}
     </div>

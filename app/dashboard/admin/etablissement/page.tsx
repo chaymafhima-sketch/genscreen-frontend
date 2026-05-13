@@ -16,8 +16,8 @@ import {
   Globe,
   RefreshCcw,
   Users,
+  ArrowUpDown,
 } from "lucide-react";
-import { TUNISIA_CITIES } from "@/app/lib/constants/tunisia-cities";
 import { toast } from "react-hot-toast";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
@@ -33,7 +33,6 @@ export default function EtablissementsPage() {
   const [formData, setFormData] = useState({
     name: "",
     address: "",
-    city: "",
     phone: "",
   });
   const [users, setUsers] = useState<any[]>([]);
@@ -45,6 +44,17 @@ export default function EtablissementsPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<string>("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const toggleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -106,7 +116,6 @@ export default function EtablissementsPage() {
     setFormData({
       name: etablissement.name || "",
       address: etablissement.address || "",
-      city: etablissement.city || "",
       phone: etablissement.phone || "",
     });
 
@@ -123,7 +132,7 @@ export default function EtablissementsPage() {
 
   const openAddModal = () => {
     setEditingId(null);
-    setFormData({ name: "", address: "", city: "", phone: "" });
+    setFormData({ name: "", address: "", phone: "" });
     setUserIds([]);
     setInitialUserIds([]);
     setUsersQuery("");
@@ -183,7 +192,7 @@ export default function EtablissementsPage() {
       setTimeout(() => {
         setIsModalOpen(false);
         setSubmitSuccess(false);
-        setFormData({ name: "", address: "", city: "", phone: "" });
+        setFormData({ name: "", address: "", phone: "" });
         setUserIds([]);
         setInitialUserIds([]);
         setEditingId(null);
@@ -218,7 +227,7 @@ export default function EtablissementsPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground tracking-tight">
             {t.etablissements.title}
@@ -227,43 +236,43 @@ export default function EtablissementsPage() {
             {t.etablissements.subtitle}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-3 bg-muted/40 p-2 rounded-2xl border border-border transition-colors w-full">
+        <div className="relative flex-1 group">
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder={t.etablissements.search_placeholder}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-background border border-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground"
+          />
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={fetchetablissements}
-            className="p-2.5 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all active:rotate-180 duration-500"
             title={t.common.refresh}
+            className="h-10 w-10 bg-card border border-border rounded-xl flex items-center justify-center transition-all hover:bg-muted/50 active:scale-[0.98] group shadow-sm"
           >
-            <RefreshCcw size={20} />
+            <div className="text-primary flex items-center justify-center group-active:rotate-180 transition-transform duration-500">
+              <RefreshCcw size={18} />
+            </div>
           </button>
           <button
             onClick={openAddModal}
-            className="bg-primary hover:opacity-90 text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
+            className="shrink-0 bg-primary hover:opacity-90 text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap"
           >
             <Plus size={18} /> {t.etablissements.add_button}
           </button>
         </div>
       </div>
 
-      <div className="soft-card overflow-hidden min-h-[400px] flex flex-col transition-colors shadow-sm">
-        <div className="p-4 border-b border-border flex justify-between items-center bg-muted/30 transition-colors">
-          <div className="relative w-72 group">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder={t.etablissements.search_placeholder}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl py-2 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground/60"
-            />
-          </div>
-          <span className="text-sm font-medium text-muted-foreground">
-            {filteredetablissements.length} {t.etablissements.title.toLowerCase()}
-          </span>
-        </div>
-
+      <div className="soft-card overflow-hidden min-h-[400px] flex flex-col transition-colors shadow-none mt-6">
         <div className="flex-1 p-0">
           {loading ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-muted-foreground">
@@ -284,15 +293,30 @@ export default function EtablissementsPage() {
             <table className="w-full text-left text-sm text-muted-foreground">
               <thead className="bg-muted/50 text-xs uppercase font-medium text-muted-foreground border-b border-border transition-colors">
                 <tr>
-                  <th scope="col" className="px-6 py-4">{t.etablissements.table.name}</th>
-                  <th scope="col" className="px-6 py-4">{t.etablissements.table.city}</th>
+                  <th scope="col" className="px-6 py-4 cursor-pointer select-none hover:text-foreground transition-colors" onClick={() => toggleSort("name")}>
+                    <span className="flex items-center gap-1.5">{t.etablissements.table.name} <ArrowUpDown size={12} className={sortField === 'name' ? 'text-primary' : 'opacity-40'} /></span>
+                  </th>
                   <th scope="col" className="px-6 py-4 text-center">{t.etablissements.table.assigned_users}</th>
-                  <th scope="col" className="px-6 py-4">{t.etablissements.table.contact}</th>
+                  <th scope="col" className="px-6 py-4 cursor-pointer select-none hover:text-foreground transition-colors" onClick={() => toggleSort("phone")}>
+                    <span className="flex items-center gap-1.5">{t.etablissements.table.contact} <ArrowUpDown size={12} className={sortField === 'phone' ? 'text-primary' : 'opacity-40'} /></span>
+                  </th>
+                  <th scope="col" className="px-6 py-4 cursor-pointer select-none hover:text-foreground transition-colors" onClick={() => toggleSort("createdAt")}>
+                    <span className="flex items-center gap-1.5">Date <ArrowUpDown size={12} className={sortField === 'createdAt' ? 'text-primary' : 'opacity-40'} /></span>
+                  </th>
                   <th scope="col" className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40 transition-colors">
-                {filteredetablissements.map((etablissement: any) => {
+                {[...filteredetablissements].sort((a: any, b: any) => {
+                  if (sortField === 'createdAt') {
+                    const dateA = new Date(a.createdAt || 0).getTime();
+                    const dateB = new Date(b.createdAt || 0).getTime();
+                    return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+                  }
+                  const valA = (a[sortField] || "").toString().toLowerCase();
+                  const valB = (b[sortField] || "").toString().toLowerCase();
+                  return sortOrder === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                }).map((etablissement: any) => {
                   const etablissementUserIds: string[] =
                     etablissement?.userIds ||
                     etablissement?.users
@@ -316,9 +340,6 @@ export default function EtablissementsPage() {
                           </div>
                           <span className="truncate max-w-[200px]">{etablissement.name}</span>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 font-bold text-primary">
-                        {etablissement.city || "—"}
                       </td>
                       <td className="px-6 py-4">
                         {assignedUsers.length === 0 ? (
@@ -346,6 +367,9 @@ export default function EtablissementsPage() {
                       </td>
                       <td className="px-6 py-4 font-medium">
                         {etablissement.phone || "—"}
+                      </td>
+                      <td className="px-6 py-4 text-muted-foreground text-xs">
+                        {etablissement.createdAt ? new Date(etablissement.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : "—"}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -397,7 +421,7 @@ export default function EtablissementsPage() {
 
             {submitSuccess ? (
               <div className="p-12 text-center animate-in fade-in">
-                <div className="h-16 w-16 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mb-4 mx-auto border border-emerald-500/20">
+                <div className="h-16 w-16 bg-success/10 text-success rounded-full flex items-center justify-center mb-4 mx-auto border border-success/20">
                   <Building2 size={32} />
                 </div>
                 <h3 className="text-lg font-bold">
@@ -405,42 +429,66 @@ export default function EtablissementsPage() {
                 </h3>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-muted-foreground">{t.etablissements.table.name}</label>
-                  <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-muted-foreground">{t.etablissements.table.city}</label>
-                  <select required value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary">
-                    <option value="">{t.common.loading}</option>
-                    {TUNISIA_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-muted-foreground">{t.etablissements.table.assigned_users}</label>
-                  <div className="max-h-40 overflow-y-auto border border-border rounded-xl p-2 space-y-1 bg-muted/20">
-                    {users.map(u => (
-                      <label key={u._id} className="flex items-center gap-2 p-1 hover:bg-background rounded cursor-pointer">
-                        <input type="checkbox" checked={userIds.includes(u._id)} onChange={(e) => {
-                          const next = e.target.checked ? [...userIds, u._id] : userIds.filter(id => id !== u._id);
-                          setUserIds(next);
-                        }} />
-                        <span className="text-xs">{u.fullname || u.name}</span>
-                      </label>
-                    ))}
+              <form onSubmit={handleSubmit}>
+                <div className="max-h-[450px] overflow-y-auto custom-etab-scrollbar p-6 space-y-6">
+                  <style dangerouslySetInnerHTML={{ __html: `
+                    .custom-etab-scrollbar::-webkit-scrollbar {
+                      width: 6px !important;
+                      display: block !important;
+                    }
+                    .custom-etab-scrollbar::-webkit-scrollbar-track {
+                      background: transparent !important;
+                    }
+                    .custom-etab-scrollbar::-webkit-scrollbar-thumb {
+                      background-color: #ffffff !important;
+                      border-radius: 10px !important;
+                    }
+                    .custom-etab-scrollbar {
+                      scrollbar-width: thin !important;
+                      scrollbar-color: #ffffff transparent !important;
+                    }
+                  `}} />
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase ml-1">{t.etablissements.table.name}</label>
+                      <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-all" />
+                    </div>
+                  
+                    
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase ml-1">{t.etablissements.table.assigned_users}</label>
+                      <div className="max-h-40 overflow-y-auto border border-border rounded-xl p-3 space-y-1 bg-muted/20 custom-etab-scrollbar">
+                        {users.map(u => (
+                          <label key={u._id} className="flex items-center gap-3 p-2 hover:bg-background rounded-lg cursor-pointer transition-colors group">
+                            <input type="checkbox" checked={userIds.includes(u._id)} onChange={(e) => {
+                              const next = e.target.checked ? [...userIds, u._id] : userIds.filter(id => id !== u._id);
+                              setUserIds(next);
+                            }} className="h-4 w-4 rounded border-border text-primary focus:ring-primary transition-all" />
+                            <div className="flex flex-col">
+                              <span className="text-xs font-semibold group-hover:text-primary transition-colors">{u.fullname || u.name}</span>
+                              <span className="text-[10px] text-muted-foreground">{u.email}</span>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase ml-1">{t.etablissements.table.contact}</label>
+                      <input type="tel" inputMode="numeric" maxLength={8} value={formData.phone} onChange={(e) => { const digits = e.target.value.replace(/\D/g, '').slice(0, 8); setFormData({...formData, phone: digits}); }} placeholder="Ex: 71000000" className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-all" />
+                    </div>
+
+                    <div className="flex gap-3 pt-4 border-t border-border mt-6">
+                      <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3.5 border border-border rounded-xl font-bold hover:bg-muted transition-all text-foreground">
+                        {t.common.cancel}
+                      </button>
+                      <button type="submit" disabled={isSubmitting} className="flex-1 py-3.5 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:opacity-90 disabled:opacity-50 transition-all">
+                        {isSubmitting ? t.common.loading : t.dashboard.save}
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-muted-foreground">{t.etablissements.table.contact}</label>
-                  <input type="text" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary" />
-                </div>
-
-                <button type="submit" disabled={isSubmitting} className="w-full bg-primary text-primary-foreground py-3.5 rounded-xl font-bold shadow-lg shadow-primary/20 hover:opacity-90 disabled:opacity-50 transition-all mt-4">
-                  {isSubmitting ? t.common.loading : t.dashboard.save}
-                </button>
               </form>
             )}
           </div>
@@ -450,12 +498,19 @@ export default function EtablissementsPage() {
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setIsDeleteModalOpen(false)} />
-          <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-2xl animate-in zoom-in-95">
-            <h2 className="text-xl font-bold text-destructive mb-2">{t.dashboard.delete}?</h2>
-            <p className="text-muted-foreground text-sm mb-6">{t.common.error}</p>
-            <div className="flex gap-3">
-              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-3 border border-border rounded-xl font-bold hover:bg-muted transition-all">{t.dashboard.cancel}</button>
-              <button onClick={confirmDelete} disabled={isDeleting} className="flex-1 py-3 bg-destructive text-white rounded-xl font-bold hover:bg-destructive/90 transition-all disabled:opacity-50">
+          <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl p-8 shadow-2xl animate-in zoom-in-95 flex flex-col items-center text-center">
+            <div className="h-20 w-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
+              <Trash2 size={32} />
+            </div>
+            <h2 className="text-2xl font-extrabold text-foreground mb-2">
+              {t.dashboard.delete} ?
+            </h2>
+            <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
+              Êtes-vous sûr de vouloir supprimer cet établissement ?
+            </p>
+            <div className="flex gap-4 w-full">
+              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-3.5 border border-border rounded-xl font-bold hover:bg-muted transition-all text-foreground">{t.dashboard.cancel}</button>
+              <button onClick={confirmDelete} disabled={isDeleting} className="flex-1 py-3.5 border border-border text-foreground rounded-xl font-bold hover:bg-muted transition-all disabled:opacity-50">
                 {isDeleting ? t.common.loading : t.dashboard.delete}
               </button>
             </div>

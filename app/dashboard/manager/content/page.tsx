@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Send,
   FileVideo,
@@ -37,7 +37,6 @@ export default function ManagerContentPage() {
   const [loadingContents, setLoadingContents] = useState(true);
   const [isDiffusing, setIsDiffusing] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingContent, setEditingContent] = useState<any>(null);
@@ -51,25 +50,16 @@ export default function ManagerContentPage() {
   const [contentToDelete, setContentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [createVisualFile, setCreateVisualFile] = useState<File | null>(null);
+  const [editVisualFile, setEditVisualFile] = useState<File | null>(null);
+  const editVisualRef = useRef<HTMLInputElement>(null);
 
   const fetchData = async () => {
     try {
-      const profileRes = await fetch("/api/backend/users/profile", { cache: "no-store" });
-      const user = profileRes.ok ? await profileRes.json() : null;
-      if (!user) return;
-      setUserData(user);
-
-      const etablissementsRes = await fetch("/api/backend/etablissements", { cache: "no-store" });
-      let myetablissementIds = new Set<string>();
-      if (etablissementsRes.ok) {
-        const filteredetablissements = await etablissementsRes.json();
-        myetablissementIds = new Set(filteredetablissements.map((a: { _id: any; id: any }) => a._id || a.id));
-      }
-
+      // Backend already returns only screens belonging to assigned etablissements
       const screensRes = await fetch("/api/backend/screens", { cache: "no-store" });
       if (screensRes.ok) {
-        const allScreens = await screensRes.json();
-        setScreens(allScreens.filter((s: any) => myetablissementIds.has(s.etablissementId)));
+        const myScreens = await screensRes.json();
+        setScreens(myScreens);
       }
     } catch (err) {
       console.error(err);
@@ -94,16 +84,14 @@ export default function ManagerContentPage() {
 
   useEffect(() => {
     fetchData();
+    fetchContents();
   }, []);
-
-  useEffect(() => {
-    if (userData) fetchContents();
-  }, [userData]);
 
   const openEditModal = (e: React.MouseEvent, item: any) => {
     e.stopPropagation();
     setEditingContent(item);
     setEditFormData({ title: item.title || "", message: item.message || "" });
+    setEditVisualFile(null);
     setIsEditModalOpen(true);
   };
 
@@ -117,7 +105,20 @@ export default function ManagerContentPage() {
         body: JSON.stringify(editFormData),
       });
       if (!res.ok) throw new Error("Erreur");
+
+      // If audio with a new visual file, upload it separately
+      if (editVisualFile && (editingContent.type?.toLowerCase() === 'audio')) {
+        const formData = new FormData();
+        formData.append('visual', editVisualFile);
+        formData.append('contentId', editingContent._id || editingContent.id);
+        await fetch(`/api/backend/content/${editingContent._id || editingContent.id}/visual`, {
+          method: "PUT",
+          body: formData,
+        });
+      }
+
       setIsEditModalOpen(false);
+      setEditVisualFile(null);
       fetchContents();
     } catch (err) {
       toast.error("Impossible de mettre à jour");
@@ -325,9 +326,34 @@ export default function ManagerContentPage() {
                 <label className="text-xs font-bold uppercase">{t.etablissements.table.name}</label>
                 <input required value={editFormData.title} onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })} className="w-full bg-background border border-border rounded-xl p-3 outline-none focus:border-primary" />
               </div>
-              <div className="pt-4 flex gap-3">
-                <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 bg-muted py-2.5 rounded-xl font-semibold">{t.dashboard.cancel}</button>
-                <button type="submit" disabled={isUpdating} className="flex-1 bg-primary text-white py-2.5 rounded-xl font-semibold">{isUpdating ? t.common.loading : t.dashboard.save}</button>
+
+              {/* Visual animation upload — shown only for audio type */}
+              {editingContent?.type?.toLowerCase() === 'audio' && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                  <label className="text-[11px] font-bold text-success uppercase ml-1 flex items-center gap-1">
+                    <Sparkles size={12} /> Visuel d'accompagnement
+                  </label>
+                  <input
+                    type="file"
+                    ref={editVisualRef}
+                    onChange={(e) => e.target.files?.[0] && setEditVisualFile(e.target.files[0])}
+                    className="hidden"
+                    accept="image/*,video/*"
+                  />
+                  <div
+                    onClick={() => editVisualRef.current?.click()}
+                    className="w-full bg-success/5 border-2 border-dashed border-success/20 rounded-xl py-5 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-success hover:bg-success/10 transition-all group"
+                  >
+                    <ImageIcon className="text-success/50 group-hover:text-success" size={24} />
+                    <span className="text-[11px] font-medium text-muted-foreground">
+                      {editVisualFile ? editVisualFile.name : "Image ou animation (Optionnel)"}
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div className="pt-4 flex gap-3 border-t border-border mt-2">
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-3.5 border border-border rounded-xl font-bold hover:bg-muted transition-all text-foreground">{t.dashboard.cancel}</button>
+                <button type="submit" disabled={isUpdating} className="flex-1 py-3.5 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:opacity-90 disabled:opacity-50 transition-all">{isUpdating ? t.common.loading : t.dashboard.save}</button>
               </div>
             </form>
           </div>
@@ -337,11 +363,21 @@ export default function ManagerContentPage() {
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-background/60 backdrop-blur-md" onClick={() => !isDeleting && setIsDeleteModalOpen(false)} />
-          <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-2xl animate-in zoom-in-95">
-            <h2 className="text-xl font-bold text-destructive mb-2">{t.dashboard.delete}?</h2>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-3 border border-border rounded-xl font-bold">{t.dashboard.cancel}</button>
-              <button onClick={confirmDelete} disabled={isDeleting} className="flex-1 bg-destructive text-white rounded-xl font-bold">{isDeleting ? t.common.loading : t.dashboard.delete}</button>
+          <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl p-8 shadow-2xl animate-in zoom-in-95 flex flex-col items-center text-center">
+            <div className="h-20 w-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
+              <Trash2 size={32} />
+            </div>
+            <h2 className="text-2xl font-extrabold text-foreground mb-2">
+              {t.dashboard.delete} ?
+            </h2>
+            <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
+              Êtes-vous sûr de vouloir supprimer ce contenu ?
+            </p>
+            <div className="flex gap-4 w-full">
+              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-3.5 border border-border rounded-xl font-bold hover:bg-muted transition-all text-foreground">{t.dashboard.cancel}</button>
+              <button onClick={confirmDelete} disabled={isDeleting} className="flex-1 py-3.5 border border-border text-foreground rounded-xl font-bold hover:bg-muted transition-all disabled:opacity-50">
+                {isDeleting ? t.common.loading : t.dashboard.delete}
+              </button>
             </div>
           </div>
         </div>

@@ -298,30 +298,52 @@ export default function ContentPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 relative">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{t.content.title}</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-2">{t.content.subtitle}</p>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight flex items-center gap-3">
+            {t.content.title}
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            {t.content.subtitle}
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={fetchContents} className="p-2.5 rounded-xl border border-border text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 transition-all active:rotate-180 duration-500" title={t.common.refresh}>
-            <RefreshCcw size={20} />
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex items-center justify-between gap-3 bg-muted/40 p-2 rounded-2xl border border-border transition-colors w-full">
+        <div className="relative flex-1 group">
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder={t.content.search_placeholder}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-background border border-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground"
+          />
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={fetchContents}
+            title={t.common.refresh}
+            className="h-10 w-10 bg-card border border-border rounded-xl flex items-center justify-center transition-all hover:bg-muted/50 active:scale-[0.98] group shadow-sm"
+          >
+            <div className="text-primary flex items-center justify-center group-active:rotate-180 transition-transform duration-500">
+              <RefreshCcw size={18} />
+            </div>
           </button>
-          <button onClick={openAddModal} className="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-blue-500/20 active:scale-95 flex items-center gap-2">
+          <button
+            onClick={openAddModal}
+            className="shrink-0 bg-primary hover:opacity-90 text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap"
+          >
             <Plus size={18} /> {t.content.add_button}
           </button>
         </div>
       </div>
 
-      <div className="soft-card overflow-hidden min-h-[400px] flex flex-col transition-colors">
-        <div className="p-4 border-b border-border flex justify-between items-center bg-muted/30">
-          <div className="relative w-72 group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
-            <input type="text" placeholder={t.content.search_placeholder} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-background border border-border rounded-xl py-2 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
-          </div>
-          <span className="text-sm font-medium text-muted-foreground">{filteredContents.length} {t.content.title.toLowerCase()}</span>
-        </div>
-
+      <div className="soft-card overflow-hidden min-h-[400px] flex flex-col transition-colors shadow-none mt-6">
         <div className="flex-1 p-0">
           {loading ? (
             <div className="h-full w-full flex flex-col items-center justify-center p-20 text-muted-foreground">
@@ -411,36 +433,124 @@ export default function ContentPage() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => !isSubmitting && setIsModalOpen(false)} />
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-slate-200">
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-md" onClick={() => !isSubmitting && setIsModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-border bg-muted/30 flex justify-between items-center">
               <h2 className="text-xl font-bold">{editingId ? t.dashboard.edit : t.content.add_button}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-slate-500"><X size={20} /></button>
+              <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-foreground"><X size={24} /></button>
             </div>
 
             {submitSuccess ? (
-              <div className="p-12 text-center animate-in fade-in">
+              <div className="p-12 text-center">
                 <div className="h-16 w-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mb-4 mx-auto border border-emerald-500/20"><UploadCloud size={32} /></div>
-                <h3 className="text-lg font-bold">{t.dashboard.save}</h3>
+                <h3 className="text-lg font-bold text-foreground">{t.dashboard.save}</h3>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold">{t.etablissements.table.name}</label>
-                  <input required type="text" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500" />
+              <form onSubmit={handleSubmit}>
+                <div className="max-h-[450px] overflow-y-auto custom-content-scrollbar">
+                  <style dangerouslySetInnerHTML={{ __html: `
+                    .custom-content-scrollbar::-webkit-scrollbar {
+                      width: 8px !important;
+                      display: block !important;
+                    }
+                    .custom-content-scrollbar::-webkit-scrollbar-track {
+                      background: rgba(255, 255, 255, 0.05) !important;
+                    }
+                    .custom-content-scrollbar::-webkit-scrollbar-thumb {
+                      background-color: #ffffff !important;
+                      border-radius: 10px !important;
+                    }
+                    .custom-content-scrollbar {
+                      scrollbar-width: thin !important;
+                      scrollbar-color: #ffffff rgba(255, 255, 255, 0.05) !important;
+                    }
+                  `}} />
+                  <div className="space-y-6 p-6 pb-10">
+                    {/* Informations Générales */}
+                    <div className="space-y-4">
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-bold text-muted-foreground uppercase ml-1">Nom du contenu</label>
+                          <input required type="text" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-all" placeholder="Ex: Menu du jour, Promo..." />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-bold text-muted-foreground uppercase ml-1">Type de média</label>
+                          <select className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary cursor-pointer transition-all" value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}>
+                            <option value="image">🖼️ Image</option>
+                            <option value="video">🎬 Vidéo</option>
+                            <option value="audio">🎵 Audio</option>
+                            <option value="url">🌐 URL</option>
+                            <option value="message">💬 Message</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Médias & Contenu */}
+                    <div className="space-y-4">
+                      {isFileType && !editingId && (
+                        <div className="grid grid-cols-1 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-[11px] font-bold text-muted-foreground uppercase ml-1">{formData.type === 'audio' ? 'Piste Audio (MP3)' : 'Fichier Source'}</label>
+                            <div className="relative group">
+                              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept={formData.type === 'image' ? 'image/*' : formData.type === 'video' ? 'video/*' : 'audio/*'} />
+                              <div onClick={() => fileInputRef.current?.click()} className="w-full bg-muted/20 border-2 border-dashed border-border rounded-xl py-4 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all">
+                                <UploadCloud className="text-muted-foreground group-hover:text-primary" size={20} />
+                                <span className="text-[10px] font-medium text-muted-foreground">{selectedFile ? selectedFile.name : "Cliquez pour uploader"}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {formData.type === 'audio' && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                              <label className="text-[11px] font-bold text-success uppercase ml-1 flex items-center gap-1"><Sparkles size={12} /> Visuel d'accompagnement</label>
+                              <div className="relative group">
+                                <input type="file" ref={visualInputRef} onChange={handleVisualChange} className="hidden" accept="image/*,video/*" />
+                                <div onClick={() => visualInputRef.current?.click()} className="w-full bg-success/5 border-2 border-dashed border-success/20 rounded-xl py-4 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-success hover:bg-success/10 transition-all">
+                                  <ImageIcon className="text-success/50 group-hover:text-success" size={20} />
+                                  <span className="text-[10px] font-medium text-muted-foreground">{selectedVisualFile ? selectedVisualFile.name : "Image ou animation (Optionnel)"}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Visual upload for audio in EDIT mode */}
+                      {editingId && formData.type === 'audio' && (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                          <label className="text-[11px] font-bold text-success uppercase ml-1 flex items-center gap-1"><Sparkles size={12} /> Visuel d'accompagnement</label>
+                          <div className="relative group">
+                            <input type="file" ref={visualInputRef} onChange={handleVisualChange} className="hidden" accept="image/*,video/*" />
+                            <div onClick={() => visualInputRef.current?.click()} className="w-full bg-success/5 border-2 border-dashed border-success/20 rounded-xl py-5 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-success hover:bg-success/10 transition-all">
+                              <ImageIcon className="text-success/50 group-hover:text-success" size={24} />
+                              <span className="text-[11px] font-medium text-muted-foreground">{selectedVisualFile ? selectedVisualFile.name : "Image ou animation (Optionnel)"}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {formData.type === 'url' && (
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-bold text-muted-foreground uppercase ml-1">Lien de redirection</label>
+                          <input required type="url" value={formData.url} onChange={(e) => setFormData({...formData, url: e.target.value})} placeholder="https://..." className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary" />
+                        </div>
+                      )}
+
+                      {formData.type === 'message' && (
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-bold text-muted-foreground uppercase ml-1">Message à diffuser</label>
+                          <textarea required value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary min-h-[100px] resize-none" placeholder="Écrivez votre message ici..." />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-3 pt-6 border-t border-border">
+                      <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3.5 border border-border rounded-xl font-bold hover:bg-muted transition-all text-foreground">{t.common.cancel}</button>
+                      <button type="submit" disabled={isSubmitting} className="flex-1 py-3.5 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:opacity-90 disabled:opacity-50 transition-all">{isSubmitting ? t.common.loading : (editingId ? t.common.save : t.dashboard.add)}</button>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold">Type</label>
-                  <select className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500" value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}>
-                    <option value="image">🖼️ Image</option>
-                    <option value="video">🎬 Vidéo</option>
-                    <option value="url">🌐 URL</option>
-                    <option value="message">💬 Message</option>
-                  </select>
-                </div>
-                <button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-blue-500/20 hover:opacity-90 disabled:opacity-50 transition-all mt-4">
-                  {isSubmitting ? t.common.loading : t.dashboard.save}
-                </button>
               </form>
             )}
           </div>
@@ -450,11 +560,21 @@ export default function ContentPage() {
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setIsDeleteModalOpen(false)} />
-          <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 rounded-2xl p-6 shadow-2xl">
-            <h2 className="text-xl font-bold text-red-600 mb-2">{t.dashboard.delete}?</h2>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-3 border border-border rounded-xl font-bold">{t.dashboard.cancel}</button>
-              <button onClick={confirmDelete} disabled={isDeleting} className="flex-1 bg-red-600 text-white rounded-xl font-bold">{isDeleting ? t.common.loading : t.dashboard.delete}</button>
+          <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl p-8 shadow-2xl animate-in zoom-in-95 flex flex-col items-center text-center">
+            <div className="h-20 w-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
+              <Trash2 size={32} />
+            </div>
+            <h2 className="text-2xl font-extrabold text-foreground mb-2">
+              {t.dashboard.delete} ?
+            </h2>
+            <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
+              Êtes-vous sûr de vouloir supprimer ce contenu ?
+            </p>
+            <div className="flex gap-4 w-full">
+              <button onClick={() => setIsDeleteModalOpen(false)} className="flex-1 py-3.5 border border-border rounded-xl font-bold hover:bg-muted transition-all text-foreground">{t.dashboard.cancel}</button>
+              <button onClick={confirmDelete} disabled={isDeleting} className="flex-1 py-3.5 border border-border text-foreground rounded-xl font-bold hover:bg-muted transition-all disabled:opacity-50">
+                {isDeleting ? t.common.loading : t.dashboard.delete}
+              </button>
             </div>
           </div>
         </div>

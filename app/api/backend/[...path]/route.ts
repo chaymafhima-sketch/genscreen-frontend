@@ -36,78 +36,63 @@ async function tryRefreshToken(refreshToken: string): Promise<RefreshResponse | 
   }
 }
 
-async function proxy(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
-  const { path } = await ctx.params;
-  const url = new URL(req.url);
-  const upstreamUrl = `${BACKEND}/${path.join("/")}${url.search}`;
+async function proxy(req: NextRequest, ctx: any) {
+  try {
+    const params = await ctx.params;
+    const pathSegments = params?.path || [];
+    const pathStr = Array.isArray(pathSegments) ? pathSegments.join("/") : pathSegments;
 
-  const token = (await getToken({ req, secret: AUTH_SECRET })) as TokenPayload | null;
-  let accessToken = token?.accessToken;
-  const refreshToken = token?.refreshToken;
+    if (!pathStr) return NextResponse.json({ message: "Path missing" }, { status: 400 });
 
-  if (!accessToken) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
+    const url = new URL(req.url);
+    const cleanPath = pathStr.replace(/^\/+|\/+$/g, "");
+    const upstreamUrl = `${BACKEND}/${cleanPath}${url.search}`;
+    const method = req.method;
 
-  // Copy request body for non-GET/HEAD
-  const method = req.method.toUpperCase();
-  const hasBody = !["GET", "HEAD"].includes(method);
-  const body = hasBody ? await req.arrayBuffer() : undefined;
+    const secret = process.env.NEXTAUTH_SECRET || AUTH_SECRET;
+    const token = await getToken({ req, secret });
 
-  const makeRequest = (tokenValue: string) => {
-    const headers: Record<string, string> = {
-      "Authorization": `Bearer ${tokenValue}`,
-    };
-    
-    // We must NOT manually set Content-Type for multipart/form-data as it needs the boundary
-    const originalContentType = req.headers.get("content-type");
-    if (hasBody && originalContentType) {
-      headers["Content-Type"] = originalContentType;
+    if (!token?.accessToken) {
+      console.error("Proxy: Unauthorized - No valid token found in request");
+      return NextResponse.json({ message: "Unauthorized - No session" }, { status: 401 });
     }
 
-    return fetch(upstreamUrl, {
+    const headers = new Headers(req.headers);
+    headers.set("Authorization", `Bearer ${token.accessToken}`);
+    headers.delete("host"); // Let fetch set the correct host
+
+    const res = await fetch(upstreamUrl, {
       method,
       headers,
-      body,
+      body: ["GET", "HEAD"].includes(method) ? null : req.body,
+      duplex: "half",
       cache: "no-store",
+    } as any);
+
+    return new NextResponse(res.body, {
+      status: res.status,
+      headers: {
+        "Content-Type": res.headers.get("Content-Type") || "application/json",
+      },
     });
-  };
-
-  let res = await makeRequest(accessToken);
-
-  // One-time retry with refreshed access token when backend returns 401.
-  if (res.status === 401 && refreshToken) {
-    const refreshed = await tryRefreshToken(refreshToken);
-    if (refreshed?.access_token) {
-      accessToken = refreshed.access_token;
-      res = await makeRequest(accessToken);
-    }
+  } catch (err: any) {
+    return NextResponse.json({ message: err.message }, { status: 500 });
   }
-
-  const contentType = res.headers.get("content-type") || "";
-  const raw = await res.arrayBuffer();
-
-  return new NextResponse(raw, {
-    status: res.status,
-    headers: {
-      "content-type": contentType,
-    },
-  });
 }
 
-export async function GET(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+export async function GET(req: NextRequest, ctx: any) {
   return proxy(req, ctx);
 }
-export async function POST(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+export async function POST(req: NextRequest, ctx: any) {
   return proxy(req, ctx);
 }
-export async function PUT(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+export async function PUT(req: NextRequest, ctx: any) {
   return proxy(req, ctx);
 }
-export async function PATCH(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+export async function PATCH(req: NextRequest, ctx: any) {
   return proxy(req, ctx);
 }
-export async function DELETE(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
+export async function DELETE(req: NextRequest, ctx: any) {
   return proxy(req, ctx);
 }
 
