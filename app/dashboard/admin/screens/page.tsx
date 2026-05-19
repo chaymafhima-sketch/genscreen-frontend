@@ -20,6 +20,10 @@ import {
   Trash2,
   FileVideo,
   ChevronRight,
+  Video,
+  Volume1,
+  Volume2,
+  GripVertical,
 } from "lucide-react";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
@@ -37,6 +41,7 @@ export default function ScreensPage() {
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentTransition, setCurrentTransition] = useState("fade");
 
   // Form state
   const [formData, setFormData] = useState({
@@ -106,7 +111,8 @@ export default function ScreensPage() {
       if (!res.ok)
         throw new Error("Erreur de récupération des contenus affectés");
       const data = await res.json();
-      const ids = (data || []).map((c: any) => c?._id || c?.id).filter(Boolean);
+      const list = data.playlist ? data.playlist : data;
+      const ids = (list || []).map((c: any) => c?._id || c?.id).filter(Boolean);
       setSelectedContentIds(ids);
     } catch (err) {
       console.error(err);
@@ -142,6 +148,33 @@ export default function ScreensPage() {
       alert(err.message || "Impossible de supprimer cet écran");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleResetPairing = async (screenId: string) => {
+    if (!confirm("Voulez-vous réinitialiser le code de ce téléviseur ? Il devra être reconnecté.")) return;
+    try {
+      const res = await fetch(`/api/backend/screens/${screenId}/reset-pairing`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Erreur");
+      fetchScreens();
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de la réinitialisation");
+    }
+  };
+
+  const handleVolumeCommand = async (screenId: string, command: "volume_up" | "volume_down") => {
+    try {
+      const res = await fetch(`/api/backend/screens/${screenId}/command`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command }),
+      });
+      if (!res.ok) throw new Error("Erreur d'envoi");
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -194,7 +227,8 @@ export default function ScreensPage() {
       );
       if (res.ok) {
         const data = await res.json();
-        setCurrentPlaylist(data || []);
+        setCurrentPlaylist(data.playlist ? data.playlist : (data || []));
+        setCurrentTransition(data.settings?.transition || 'fade');
       }
     } catch (err) {
       console.error(err);
@@ -215,7 +249,7 @@ export default function ScreensPage() {
       const res = await fetch(`/api/backend/screens/${screenId}/playlist`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playlist }),
+        body: JSON.stringify({ playlist, transition: currentTransition }),
       });
       if (!res.ok)
         throw new Error("Erreur lors de la mise à jour de la playlist");
@@ -416,6 +450,27 @@ export default function ScreensPage() {
                 </div>
 
                 <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <button
+                    onClick={() => handleVolumeCommand(screen._id || screen.id, "volume_down")}
+                    className="p-1.5 bg-background/80 backdrop-blur-md rounded-lg border border-border text-foreground hover:bg-muted transition-colors"
+                    title="Baisser le volume"
+                  >
+                    <Volume1 size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleVolumeCommand(screen._id || screen.id, "volume_up")}
+                    className="p-1.5 bg-background/80 backdrop-blur-md rounded-lg border border-border text-foreground hover:bg-muted transition-colors"
+                    title="Augmenter le volume"
+                  >
+                    <Volume2 size={16} />
+                  </button>
+                  <button
+                    onClick={() => handleResetPairing(screen._id || screen.id)}
+                    className="p-1.5 bg-yellow-500/80 backdrop-blur-md rounded-lg border border-yellow-500/30 text-white hover:bg-yellow-500 transition-colors"
+                    title="Réinitialiser le code"
+                  >
+                    <RefreshCcw size={16} />
+                  </button>
                   <button
                     onClick={() => openEditModal(screen)}
                     className="p-1.5 bg-primary/80 backdrop-blur-md rounded-lg border border-primary/30 text-white hover:bg-primary transition-colors"
@@ -824,8 +879,30 @@ export default function ScreensPage() {
                     currentPlaylist.map((item, idx) => (
                       <div
                         key={`${item._id || item.id}-${idx}`}
-                        className="flex items-center gap-4 p-4 bg-card border border-border rounded-2xl hover:border-primary/30 transition-colors"
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', idx.toString());
+                          e.currentTarget.classList.add('opacity-50');
+                        }}
+                        onDragEnd={(e) => {
+                          e.currentTarget.classList.remove('opacity-50');
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          const draggedIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                          if (draggedIdx !== idx && !isNaN(draggedIdx)) {
+                            const newPlaylist = [...currentPlaylist];
+                            const [draggedItem] = newPlaylist.splice(draggedIdx, 1);
+                            newPlaylist.splice(idx, 0, draggedItem);
+                            setCurrentPlaylist(newPlaylist);
+                          }
+                        }}
+                        className="flex items-center gap-4 p-4 bg-card border border-border rounded-2xl hover:border-primary/30 transition-colors cursor-move"
                       >
+                        <GripVertical size={20} className="text-muted-foreground/50 hover:text-foreground cursor-grab active:cursor-grabbing" />
                         <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden border border-border">
                           {item.imageBase64 ? (
                             <img
@@ -835,6 +912,8 @@ export default function ScreensPage() {
                             />
                           ) : item.type === "video" ? (
                             <Activity size={20} className="text-primary" />
+                          ) : item.type === "mirror" ? (
+                            <Video size={20} className="text-primary" />
                           ) : (
                             <Globe size={20} className="text-primary" />
                           )}
@@ -891,6 +970,22 @@ export default function ScreensPage() {
                     ))
                   )}
                 </div>
+
+                <div className="pt-4 mt-4 border-t border-border">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-3">
+                    <Activity size={14} /> Animation de Transition
+                  </h4>
+                  <select
+                    value={currentTransition}
+                    onChange={(e) => setCurrentTransition(e.target.value)}
+                    className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                  >
+                    <option value="none">Aucune (Cut)</option>
+                    <option value="fade">Fondu Enchaîné (Fade)</option>
+                    <option value="slide_left">Glissement (Slide Left)</option>
+                    <option value="zoom">Zoom</option>
+                  </select>
+                </div>
               </div>
 
               {/* Add Content Section */}
@@ -923,8 +1018,12 @@ export default function ScreensPage() {
                           />
                         ) : (
                           <div className="w-full h-full bg-muted flex flex-col items-center justify-center p-2 text-center">
-                            <Activity size={24} className="text-primary mb-1" />
-                            <p className="text-[9px] font-bold truncate w-full">
+                            {content.type === "mirror" ? (
+                              <Video size={24} className="text-primary mb-1" />
+                            ) : (
+                              <Activity size={24} className="text-primary mb-1" />
+                            )}
+                            <p className="text-[9px] font-bold truncate w-full px-1">
                               {content.title}
                             </p>
                           </div>

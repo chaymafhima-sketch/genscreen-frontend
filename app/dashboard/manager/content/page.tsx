@@ -313,6 +313,94 @@ export default function ManagerContentPage() {
         </form>
       </div>
 
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-md" onClick={() => !isCreating && setIsCreateModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-border bg-muted/30 flex justify-between items-center">
+              <h2 className="text-xl font-bold">{t.content.add_button}</h2>
+              <button onClick={() => setIsCreateModalOpen(false)} className="text-muted-foreground hover:text-foreground"><X size={24} /></button>
+            </div>
+
+            <form onSubmit={handleCreateContent}>
+              <div className="max-h-[450px] overflow-y-auto custom-content-scrollbar">
+                <style dangerouslySetInnerHTML={{ __html: `
+                  .custom-content-scrollbar::-webkit-scrollbar { width: 8px !important; display: block !important; }
+                  .custom-content-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05) !important; }
+                  .custom-content-scrollbar::-webkit-scrollbar-thumb { background-color: #ffffff !important; border-radius: 10px !important; }
+                  .custom-content-scrollbar { scrollbar-width: thin !important; scrollbar-color: #ffffff rgba(255, 255, 255, 0.05) !important; }
+                `}} />
+                <div className="space-y-6 p-6 pb-10">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase ml-1">Nom du contenu</label>
+                      <input required type="text" value={createFormData.title} onChange={(e) => setCreateFormData({...createFormData, title: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary transition-all" placeholder="Ex: Menu du jour, Promo..." />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase ml-1">Type de média</label>
+                      <select className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary cursor-pointer transition-all" value={createFormData.type} onChange={(e) => setCreateFormData({...createFormData, type: e.target.value})}>
+                        <option value="image">🖼️ Image</option>
+                        <option value="video">🎬 Vidéo</option>
+                        <option value="audio">🎵 Audio</option>
+                        <option value="url">🌐 URL</option>
+                        <option value="message">💬 Message</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {(createFormData.type === 'image' || createFormData.type === 'video' || createFormData.type === 'audio') && (
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[11px] font-bold text-muted-foreground uppercase ml-1">{createFormData.type === 'audio' ? 'Piste Audio (MP3)' : 'Fichier Source'}</label>
+                          <div className="relative group">
+                            <input type="file" onChange={(e) => e.target.files && setCreateFile(e.target.files[0])} className="hidden" accept={createFormData.type === 'image' ? 'image/*' : createFormData.type === 'video' ? 'video/*' : 'audio/*'} id="create-file-input" />
+                            <label htmlFor="create-file-input" className="w-full bg-muted/20 border-2 border-dashed border-border rounded-xl py-4 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all">
+                              <span className="text-[10px] font-medium text-muted-foreground">{createFile ? createFile.name : "Cliquez pour uploader"}</span>
+                            </label>
+                          </div>
+                        </div>
+
+                        {createFormData.type === 'audio' && (
+                          <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                            <label className="text-[11px] font-bold text-success uppercase ml-1 flex items-center gap-1"><Sparkles size={12} /> Visuel d'accompagnement</label>
+                            <div className="relative group">
+                              <input type="file" onChange={(e) => e.target.files && setCreateVisualFile(e.target.files[0])} className="hidden" accept="image/*,video/*" id="create-visual-input" />
+                              <label htmlFor="create-visual-input" className="w-full bg-success/5 border-2 border-dashed border-success/20 rounded-xl py-4 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-success hover:bg-success/10 transition-all">
+                                <span className="text-[10px] font-medium text-muted-foreground">{createVisualFile ? createVisualFile.name : "Image ou animation (Optionnel)"}</span>
+                              </label>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {createFormData.type === 'url' && (
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold text-muted-foreground uppercase ml-1">Lien de redirection</label>
+                        <input required type="url" value={createFormData.url} onChange={(e) => setCreateFormData({...createFormData, url: e.target.value})} placeholder="https://..." className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary" />
+                      </div>
+                    )}
+
+                    {createFormData.type === 'message' && (
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold text-muted-foreground uppercase ml-1">Message à diffuser</label>
+                        <textarea required value={createFormData.message} onChange={(e) => setCreateFormData({...createFormData, message: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 outline-none focus:border-primary min-h-[100px] resize-none" placeholder="Écrivez votre message ici..." />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3 pt-6 border-t border-border">
+                    <button type="button" onClick={() => setIsCreateModalOpen(false)} className="flex-1 py-3.5 border border-border rounded-xl font-bold hover:bg-muted transition-all text-foreground">{t.common.cancel}</button>
+                    <button type="submit" disabled={isCreating} className="flex-1 py-3.5 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:opacity-90 disabled:opacity-50 transition-all">{isCreating ? t.common.loading : t.dashboard.add}</button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {isEditModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-background/60 backdrop-blur-md" onClick={() => !isUpdating && setIsEditModalOpen(false)} />

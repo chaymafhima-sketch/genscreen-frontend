@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { FileVideo, Search, Loader2, AlertCircle, PlayCircle, Clock, Video, Image as ImageIcon, Plus, X, UploadCloud, FileText, Edit2, Trash2, Globe, MessageSquare, RefreshCcw, Music, Sparkles } from "lucide-react";
+import { FileVideo, Search, Loader2, AlertCircle, PlayCircle, Clock, Video, Image as ImageIcon, Plus, X, UploadCloud, FileText, Edit2, Trash2, Globe, MessageSquare, RefreshCcw, Music, Sparkles, Monitor, Tv } from "lucide-react";
+import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
@@ -12,6 +13,11 @@ export default function ContentPage() {
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<any>({ title: '', type: 'image', url: '', message: '' });
+  const [activeMirrorId, setActiveMirrorId] = useState<string | null>(null);
+  const socketRef = useRef<any>(null);
+  const peerConnections = useRef<Record<string, RTCPeerConnection>>({});
+  const localStream = useRef<MediaStream | null>(null);
+  const frameInterval = useRef<any>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -194,6 +200,12 @@ export default function ContentPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: formData.title, type: 'message', message: formData.message || '' })
         });
+      } else if (contentType === 'mirror') {
+        res = await fetch("/api/backend/content/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: formData.title, type: 'mirror' })
+        });
       } else {
         if (!selectedFile) { setIsSubmitting(false); return; }
         const data = new FormData();
@@ -232,6 +244,163 @@ export default function ContentPage() {
     }
   };
 
+  const startMirroring = async (contentId: string) => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { 
+          cursor: "always",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 15 }
+        } as any,
+        audio: false
+      });
+      localStream.current = stream;
+      setActiveMirrorId(contentId);
+
+      const backendUrl = `${window.location.protocol}//${window.location.hostname}:3001`;
+      const socket = io(backendUrl); 
+      socketRef.current = socket;
+
+      const iceServers = [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+        { urls: "stun:stun.services.mozilla.com" }
+      ];
+
+      socket.on("connect", () => {
+        socket.emit("join-stream-room", { streamId: contentId });
+        socket.emit("start-mirror", { streamId: contentId });
+      });
+
+      socket.on("signal", async (data: any) => {
+        if (!data.fromScreen) return;
+        
+        // Handle screen ready to receive
+        if (data.signal.type === 'ready') {
+          let pc = peerConnections.current[data.senderId];
+          if (pc) pc.close();
+          
+          pc = new RTCPeerConnection({
+            iceServers: iceServers
+          });
+          peerConnections.current[data.senderId] = pc;
+          
+          if (localStream.current) {
+            localStream.current.getTracks().forEach(track => pc.addTrack(track, localStream.current!));
+          }
+
+          pc.onicecandidate = (event) => {
+            if (event.candidate) {
+              let candidateStr = event.candidate.candidate;
+              // Hack to bypass mDNS hiding on local networks
+              if (candidateStr.includes(".local")) {
+                const localIp = window.location.hostname;
+                if (localIp.match(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/)) {
+                  candidateStr = candidateStr.replace(/[a-f0-9-]+\.local/g, localIp);
+                }
+              }
+
+              socket.emit("signal", {
+                targetId: data.senderId,
+                senderId: contentId,
+                signal: {
+                  ...event.candidate.toJSON(),
+                  candidate: candidateStr
+                },
+                isScreen: false
+              });
+            }
+          };
+
+          const offer = await pc.createOffer();
+          let sdp = offer.sdp || "";
+          const localIp = window.location.hostname;
+          if (localIp.match(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/)) {
+            sdp = sdp.replace(/[a-f0-9-]+\.local/g, localIp);
+          }
+          const modifiedOffer = { type: 'offer' as RTCSdpType, sdp };
+          await pc.setLocalDescription(modifiedOffer);
+          
+          socket.emit("signal", {
+            targetId: data.senderId,
+            senderId: contentId,
+            signal: modifiedOffer,
+            isScreen: false
+          });
+          return;
+        }
+        
+        let pc = peerConnections.current[data.senderId];
+
+        if (data.signal.sdp) {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.signal));
+          if (data.signal.type === "offer") {
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            socket.emit("signal", {
+              targetId: data.senderId,
+              senderId: contentId,
+              signal: answer,
+              isScreen: false
+            });
+          }
+        } else if (data.signal.candidate) {
+          await pc.addIceCandidate(new RTCIceCandidate(data.signal));
+        }
+      });
+
+      stream.getVideoTracks()[0].onended = () => {
+        stopMirroring();
+      };
+
+      toast.success("Mirroring started!");
+
+      // --- LEGACY FALLBACK: Stream frames via WebSockets ---
+      const canvas = document.createElement("canvas");
+      const video = document.createElement("video");
+      video.srcObject = stream;
+      video.muted = true;
+      video.play();
+      
+      frameInterval.current = setInterval(() => {
+        if (socket.connected && video.videoWidth > 0) {
+          canvas.width = 1024;
+          canvas.height = (1024 * video.videoHeight) / video.videoWidth;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const frame = canvas.toDataURL("image/jpeg", 0.7);
+          socket.emit("mirror-frame", { streamId: contentId, frame });
+        }
+      }, 100);
+      // -----------------------------------------------------
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to start mirroring");
+    }
+  };
+
+  const stopMirroring = () => {
+    if (frameInterval.current) {
+      clearInterval(frameInterval.current);
+      frameInterval.current = null;
+    }
+    if (localStream.current) {
+      localStream.current.getTracks().forEach(track => track.stop());
+      localStream.current = null;
+    }
+    if (socketRef.current) {
+      socketRef.current.emit("stop-mirror", { streamId: activeMirrorId });
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+    Object.values(peerConnections.current).forEach(pc => pc.close());
+    peerConnections.current = {};
+    setActiveMirrorId(null);
+    toast.success("Mirroring stopped");
+  };
+
   const getStatusBadge = (status?: string) => {
     const currentStatus = status || "desactive"; 
     switch (currentStatus) {
@@ -262,6 +431,7 @@ export default function ContentPage() {
     if (typeLower?.includes("url")) return <Globe size={20} className="text-cyan-400" />;
     if (typeLower?.includes("message")) return <MessageSquare size={20} className="text-amber-400" />;
     if (typeLower?.includes("audio")) return <Music size={20} className="text-emerald-400" />;
+    if (typeLower?.includes("mirror")) return <Monitor size={20} className="text-indigo-400" />;
     return <ImageIcon size={20} className="text-blue-400" />;
   };
 
@@ -416,6 +586,15 @@ export default function ContentPage() {
                      <button onClick={() => openAssignTvsModal(contentId)} className="p-1.5 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 rounded-lg transition-colors border border-emerald-500/20" title={t.content.table.assigned_tvs}>
                         <PlayCircle size={16} />
                      </button>
+                     {item.type === 'mirror' && (
+                       <button 
+                        onClick={() => activeMirrorId === contentId ? stopMirroring() : startMirroring(contentId)} 
+                        className={`p-1.5 rounded-lg transition-colors border ${activeMirrorId === contentId ? 'bg-red-500/20 text-red-500 border-red-500/30 animate-pulse' : 'bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border-indigo-500/20'}`}
+                        title={activeMirrorId === contentId ? "Stop Mirroring" : "Start Mirroring"}
+                       >
+                          <Tv size={16} />
+                       </button>
+                     )}
                      <button onClick={() => openEditModal(item)} className="p-1.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors border border-blue-500/20" title={t.dashboard.edit}>
                         <Edit2 size={16} />
                      </button>
@@ -481,6 +660,7 @@ export default function ContentPage() {
                             <option value="audio">🎵 Audio</option>
                             <option value="url">🌐 URL</option>
                             <option value="message">💬 Message</option>
+                            <option value="mirror">📺 Mirror Screen (Live)</option>
                           </select>
                         </div>
                       </div>

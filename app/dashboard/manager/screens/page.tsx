@@ -19,7 +19,8 @@ import {
   Edit2,
   Trash2,
   FileVideo,
-  ChevronRight
+  ChevronRight,
+  GripVertical
 } from "lucide-react";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
@@ -37,6 +38,7 @@ export default function ScreensPage() {
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentTransition, setCurrentTransition] = useState("fade");
   
   // Form state
   const [formData, setFormData] = useState({ name: '', etablissementId: '', location: '' });
@@ -90,7 +92,8 @@ export default function ScreensPage() {
       const res = await fetch(`/api/backend/screens/${screenId}/content`, { cache: "no-store" });
       if (!res.ok) throw new Error("Erreur de récupération des contenus affectés");
       const data = await res.json();
-      const ids = (data || []).map((c: any) => c?._id || c?.id).filter(Boolean);
+      const list = data.playlist ? data.playlist : data;
+      const ids = (list || []).map((c: any) => c?._id || c?.id).filter(Boolean);
       setSelectedContentIds(ids);
     } catch (err) {
       console.error(err);
@@ -154,7 +157,8 @@ export default function ScreensPage() {
       const res = await fetch(`/api/backend/screens/${screen._id || screen.id}/content`, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
-        setCurrentPlaylist(data || []);
+        setCurrentPlaylist(data.playlist ? data.playlist : (data || []));
+        setCurrentTransition(data.settings?.transition || 'fade');
       }
     } catch (err) {
       console.error(err);
@@ -175,7 +179,7 @@ export default function ScreensPage() {
       const res = await fetch(`/api/backend/screens/${screenId}/playlist`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ playlist }),
+        body: JSON.stringify({ playlist, transition: currentTransition }),
       });
       if (!res.ok) throw new Error("Erreur lors de la mise à jour de la playlist");
       alert("Playlist mise à jour !");
@@ -644,7 +648,32 @@ export default function ScreensPage() {
                     </div>
                   ) : (
                     currentPlaylist.map((item, idx) => (
-                      <div key={item._id || item.id} className="flex items-center gap-4 p-4 bg-card border border-border rounded-2xl hover:border-primary/30 transition-colors">
+                      <div
+                        key={`${item._id || item.id}-${idx}`}
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', idx.toString());
+                          e.currentTarget.classList.add('opacity-50');
+                        }}
+                        onDragEnd={(e) => {
+                          e.currentTarget.classList.remove('opacity-50');
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          const draggedIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                          if (draggedIdx !== idx && !isNaN(draggedIdx)) {
+                            const newPlaylist = [...currentPlaylist];
+                            const [draggedItem] = newPlaylist.splice(draggedIdx, 1);
+                            newPlaylist.splice(idx, 0, draggedItem);
+                            setCurrentPlaylist(newPlaylist);
+                          }
+                        }}
+                        className="flex items-center gap-4 p-4 bg-card border border-border rounded-2xl hover:border-primary/30 transition-colors cursor-move"
+                      >
+                        <GripVertical size={20} className="text-muted-foreground/50 hover:text-foreground cursor-grab active:cursor-grabbing" />
                         <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden border border-border">
                           {item.imageBase64 ? (
                             <img src={`http://localhost:3001${item.imageBase64}`} className="w-full h-full object-cover" alt="" />
@@ -695,6 +724,22 @@ export default function ScreensPage() {
                       </div>
                     ))
                   )}
+                </div>
+
+                <div className="pt-4 mt-4 border-t border-border">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-3">
+                    <Activity size={14} /> Animation de Transition
+                  </h4>
+                  <select
+                    value={currentTransition}
+                    onChange={(e) => setCurrentTransition(e.target.value)}
+                    className="w-full bg-background border border-border rounded-xl p-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                  >
+                    <option value="none">Aucune (Cut)</option>
+                    <option value="fade">Fondu Enchaîné (Fade)</option>
+                    <option value="slide_left">Glissement (Slide Left)</option>
+                    <option value="zoom">Zoom</option>
+                  </select>
                 </div>
               </div>
 
