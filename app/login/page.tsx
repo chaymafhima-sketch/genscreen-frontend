@@ -2,20 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, ArrowRight, MonitorPlay, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Mail, Lock, ArrowRight, MonitorPlay, AlertCircle, CheckCircle2, Sun, Moon } from "lucide-react";
 import LanguageToggle from "@/app/components/LanguageToggle";
 import { signIn, useSession } from "next-auth/react";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
+import { useTheme } from "@/app/components/theme-provider";
 
 export default function LoginPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { t } = useLanguage();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -44,8 +45,8 @@ export default function LoginPage() {
       if (result?.ok) {
         setSuccess(t.auth.success_login);
         const sessionRes = await fetch("/api/auth/session", { cache: "no-store" });
-        const session = sessionRes.ok ? await sessionRes.json() : null;
-        const role = session?.user?.role;
+        const sessionData = sessionRes.ok ? await sessionRes.json() : null;
+        const role = sessionData?.user?.role;
         const target = role === "admin" ? "/dashboard/admin" : "/dashboard/manager";
         setTimeout(() => {
           router.replace(target);
@@ -66,126 +67,145 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-900 text-slate-100 overflow-hidden font-sans">
+    <div className="relative min-h-screen overflow-hidden font-sans dark:bg-gradient-to-br dark:from-[#0b0f2a] dark:via-[#0d1235] dark:to-[#080b1e] bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 flex items-center transition-colors duration-300 p-6">
 
+      <img src="/images/auth_bg.png" alt="" className="absolute inset-0 w-full h-full object-cover dark:opacity-10 opacity-5 mix-blend-luminosity" />
 
-      {/* Left Pane - Visual Branding */}
-      <div className="relative hidden w-1/2 lg:block">
-        <div className="absolute inset-0 z-10 bg-slate-900/40 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
-        <img
-          src="/images/auth_bg.png"
-          alt="Dashboard Background"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        <div className="absolute bottom-12 left-12 z-20 max-w-xl">
-          <h1 className="text-4xl font-extrabold tracking-tight text-white mb-6">
-            {t.auth.brand_title} <span className="text-blue-400">{t.auth.brand_highlight}</span>
+      {/* Decorative shapes */}
+      <div className="absolute top-10 right-14 dark:opacity-20 opacity-30">
+        <div className="relative w-10 h-10">
+          <div className="absolute top-1/2 left-0 w-full h-[2px] dark:bg-blue-400 bg-blue-600 -translate-y-1/2" />
+          <div className="absolute left-1/2 top-0 h-full w-[2px] dark:bg-blue-400 bg-blue-600 -translate-x-1/2" />
+        </div>
+      </div>
+      <div className="absolute bottom-10 left-8 dark:opacity-15 opacity-25 flex flex-col gap-1.5">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="h-[1.5px] dark:bg-blue-400 bg-blue-500 rounded" style={{ width: `${40 + i * 12}px` }} />
+        ))}
+      </div>
+      <div className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full dark:bg-blue-600/10 bg-blue-400/20 blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/3 w-56 h-56 rounded-full dark:bg-indigo-600/10 bg-indigo-400/20 blur-[80px] pointer-events-none" />
+
+      {/* Top controls */}
+      <div className="absolute top-6 right-8 z-30 flex items-center gap-3">
+        <LanguageToggle />
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="p-2 rounded-xl dark:text-slate-400 text-slate-500 hover:text-white hover:bg-white/10 dark:border-white/10 border-slate-200 border transition-all"
+          aria-label="Toggle theme"
+        >
+          {mounted ? (theme === "dark" ? <Sun size={18} /> : <Moon size={18} />) : <div className="w-[18px] h-[18px]" />}
+        </button>
+      </div>
+
+      {/* Main content */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-8 lg:px-20 flex flex-col lg:flex-row items-center gap-12 lg:gap-20 py-16">
+
+        {/* Left — branding */}
+        <div className="flex-1 text-center lg:text-left">
+          <div className="flex items-center justify-center lg:justify-start gap-4 mb-10">
+            <div className="h-12 w-12 dark:bg-blue-600/20 bg-blue-600/10 dark:border-blue-500/30 border-blue-500/40 border rounded-xl flex items-center justify-center">
+              <MonitorPlay size={24} className="dark:text-blue-400 text-blue-600" />
+            </div>
+            <span className="dark:text-white text-slate-900 font-black tracking-[0.2em] uppercase text-2xl">TUS</span>
+          </div>
+          <h1 className="text-5xl lg:text-6xl font-extrabold dark:text-white text-slate-900 leading-[1.1] mb-5">
+            {t.auth.brand_title}<br />
+            <span className="dark:text-blue-400 text-blue-600">{t.auth.brand_highlight}</span>
           </h1>
-          <p className="mt-4 text-xl text-slate-300 leading-relaxed">
+          <div className="w-12 h-1 dark:bg-blue-500 bg-blue-600 rounded-full mb-6 mx-auto lg:mx-0" />
+          <p className="dark:text-slate-400 text-slate-500 leading-relaxed max-w-sm mx-auto lg:mx-0 text-sm">
             {t.auth.brand_subtitle}
           </p>
         </div>
-      </div>
 
-      {/* Right Pane - Form */}
-      <div className="flex w-full flex-col lg:w-1/2 relative bg-slate-950">
+        {/* Right — glass card */}
+        <div className="w-full max-w-sm lg:max-w-[360px] shrink-0">
+          <div className="dark:bg-white/[0.06] bg-white/80 backdrop-blur-xl rounded-3xl p-8 dark:border-white/10 border-slate-200/80 border shadow-2xl dark:shadow-black/40 shadow-blue-200/50">
 
-        {/* Top bar with toggle */}
-        <div className="flex justify-end px-8 sm:px-12 lg:px-12 pt-6 z-10">
-          <LanguageToggle />
-        </div>
-
-        {/* Glow */}
-        <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[120%] bg-blue-600/10 blur-[100px] pointer-events-none rounded-full" />
-
-        {/* Form content */}
-        <div className="flex flex-1 flex-col justify-center px-8 sm:px-12 lg:px-24 xl:px-32">
-        <div className="w-full max-w-md mx-auto z-10">
-          <div className="mb-10 text-center lg:text-left">
-            <div className="flex items-center justify-center lg:justify-start gap-3 mb-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-                <MonitorPlay size={24} />
-              </div>
-              <span className="text-2xl font-bold tracking-wider text-slate-100 uppercase">TUS</span>
-            </div>
-
-            <h2 className="text-3xl font-bold tracking-tight text-white mb-2">
+            <h2 className="text-2xl font-bold dark:text-white text-slate-900 text-center mb-2 tracking-tight">
               {t.auth.login_title}
             </h2>
-            <p className="text-sm text-slate-400">
+            <p className="text-xs dark:text-slate-500 text-slate-400 text-center mb-7 leading-relaxed">
               {t.auth.login_subtitle}
             </p>
-          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="flex items-center gap-3 rounded-xl bg-red-500/10 p-4 text-red-500 border border-red-500/20">
-                <AlertCircle size={20} className="shrink-0" />
-                <span className="text-sm font-medium">{error}</span>
-              </div>
-            )}
-
-            {success && (
-              <div className="flex items-center gap-3 rounded-xl bg-emerald-500/10 p-4 text-emerald-500 border border-emerald-500/20">
-                <CheckCircle2 size={20} className="shrink-0" />
-                <span className="text-sm font-medium">{success}</span>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-500 group-focus-within:text-blue-500 transition-colors">
-                  <Mail size={20} />
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <div className="flex items-center gap-2.5 rounded-xl bg-red-500/10 p-3.5 text-red-400 border border-red-500/15">
+                  <AlertCircle size={16} className="shrink-0" />
+                  <span className="text-xs font-medium">{error}</span>
                 </div>
-                <input
-                  type="email"
-                  placeholder={t.auth.email_placeholder}
-                  className="block w-full rounded-xl border border-slate-700/50 bg-slate-900/50 p-4 pl-12 text-sm text-slate-100 shadow-sm transition-all focus:border-blue-500 focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-slate-500"
-                  required
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
+              )}
+              {success && (
+                <div className="flex items-center gap-2.5 rounded-xl bg-emerald-500/10 p-3.5 text-emerald-400 border border-emerald-500/15">
+                  <CheckCircle2 size={16} className="shrink-0" />
+                  <span className="text-xs font-medium">{success}</span>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-black dark:text-slate-400 text-slate-500 uppercase tracking-widest">
+                  {t.auth.email_placeholder}
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none dark:text-slate-500 text-slate-400 group-focus-within:text-blue-500 transition-colors">
+                    <Mail size={16} />
+                  </div>
+                  <input
+                    type="email"
+                    placeholder="exemple@email.com"
+                    className="w-full dark:bg-white/5 bg-slate-50 dark:border-white/10 border-slate-200 border rounded-xl py-3 pl-10 pr-4 text-sm dark:text-white text-slate-900 dark:placeholder-slate-600 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                    required
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  />
+                </div>
               </div>
 
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-500 group-focus-within:text-blue-500 transition-colors">
-                  <Lock size={20} />
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-black dark:text-slate-400 text-slate-500 uppercase tracking-widest">
+                  {t.auth.password_placeholder}
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none dark:text-slate-500 text-slate-400 group-focus-within:text-blue-500 transition-colors">
+                    <Lock size={16} />
+                  </div>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    className="w-full dark:bg-white/5 bg-slate-50 dark:border-white/10 border-slate-200 border rounded-xl py-3 pl-10 pr-4 text-sm dark:text-white text-slate-900 dark:placeholder-slate-600 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                    required
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  />
                 </div>
-                <input
-                  type="password"
-                  placeholder={t.auth.password_placeholder}
-                  className="block w-full rounded-xl border border-slate-700/50 bg-slate-900/50 p-4 pl-12 text-sm text-slate-100 shadow-sm transition-all focus:border-blue-500 focus:bg-slate-900 focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder-slate-500"
-                  required
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                />
               </div>
 
               <div className="flex justify-end">
                 <button
                   type="button"
                   onClick={() => router.push(`/forgot-password?email=${encodeURIComponent(form.email)}`)}
-                  className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
+                  className="text-xs font-medium dark:text-indigo-400 text-indigo-700 hover:dark:text-indigo-300 hover:text-indigo-900 transition-colors"
                 >
                   {t.auth.forgot_password_link}
                 </button>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="group flex w-full items-center justify-center gap-3 rounded-xl bg-blue-600 px-4 py-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-500 active:scale-[0.98] disabled:opacity-70 disabled:pointer-events-none"
-            >
-              {isLoading ? t.auth.verifying : t.auth.login_button}
-              {!isLoading && <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="group w-full flex items-center justify-center gap-2.5 py-3.5 bg-indigo-900 hover:bg-indigo-800 dark:bg-indigo-500 dark:hover:bg-indigo-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-900/25 dark:shadow-indigo-500/20 transition-all active:scale-[0.98] disabled:opacity-60 disabled:pointer-events-none mt-2"
+              >
+                {isLoading ? t.auth.verifying : t.auth.login_button}
+                {!isLoading && <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />}
+              </button>
+            </form>
 
-          <p className="mt-8 text-center text-sm text-slate-500 italic">
-            {t.auth.platform_reserved}
-          </p>
-        </div>
+            <p className="mt-6 text-center text-[11px] dark:text-slate-700 text-slate-400 italic">
+              {t.auth.platform_reserved}
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -49,25 +49,48 @@ async function proxy(req: NextRequest, ctx: any) {
     const upstreamUrl = `${BACKEND}/${cleanPath}${url.search}`;
     const method = req.method;
 
-    const secret = process.env.NEXTAUTH_SECRET || AUTH_SECRET;
-    const token = await getToken({ req, secret });
+    // Public routes — no auth needed
+    const PUBLIC_PATHS = ["auth/forgot-password", "auth/reset-password", "auth/login", "auth/refresh"];
+    const isPublic = PUBLIC_PATHS.some((p) => cleanPath === p || cleanPath.startsWith(p));
 
-    if (!token?.accessToken) {
+    const secret = process.env.NEXTAUTH_SECRET || AUTH_SECRET;
+    const token = await getToken({ req, secret }) as TokenPayload | null;
+
+    if (!isPublic && !token?.accessToken) {
       console.error("Proxy: Unauthorized - No valid token found in request");
       return NextResponse.json({ message: "Unauthorized - No session" }, { status: 401 });
     }
 
     const headers = new Headers(req.headers);
-    headers.set("Authorization", `Bearer ${token.accessToken}`);
-    headers.delete("host"); // Let fetch set the correct host
+    headers.delete("host");
 
-    const res = await fetch(upstreamUrl, {
+    // --- First attempt ---
+    let accessToken = token?.accessToken as string | undefined;
+    if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+
+    const bodyBuffer = ["GET", "HEAD"].includes(method) ? null : await req.arrayBuffer();
+
+    let res = await fetch(upstreamUrl, {
       method,
       headers,
-      body: ["GET", "HEAD"].includes(method) ? null : req.body,
-      duplex: "half",
+      body: bodyBuffer ?? null,
       cache: "no-store",
     } as any);
+
+    // --- If backend rejects the token, try a one-shot refresh and retry ---
+    if (res.status === 401 && token?.refreshToken) {
+      const refreshed = await tryRefreshToken(token.refreshToken as string);
+      if (refreshed?.access_token) {
+        accessToken = refreshed.access_token;
+        headers.set("Authorization", `Bearer ${accessToken}`);
+        res = await fetch(upstreamUrl, {
+          method,
+          headers,
+          body: bodyBuffer ?? null,
+          cache: "no-store",
+        } as any);
+      }
+    }
 
     return new NextResponse(res.body, {
       status: res.status,
@@ -95,4 +118,3 @@ export async function PATCH(req: NextRequest, ctx: any) {
 export async function DELETE(req: NextRequest, ctx: any) {
   return proxy(req, ctx);
 }
-

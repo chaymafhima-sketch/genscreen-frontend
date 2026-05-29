@@ -13,7 +13,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <NextAuthSessionProvider>
           <LanguageProvider>
-            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
               {children}
               <Toaster
                 position="bottom-left"
