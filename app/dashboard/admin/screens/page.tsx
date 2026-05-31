@@ -26,6 +26,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
+import toast from "react-hot-toast";
 
 export default function ScreensPage() {
   const { t } = useLanguage();
@@ -145,7 +146,7 @@ export default function ScreensPage() {
       setIsDeleteModalOpen(false);
       setScreenToDelete(null);
     } catch (err: any) {
-      alert(err.message || "Impossible de supprimer cet écran");
+      toast.error(err.message || "Impossible de supprimer cet écran");
     } finally {
       setIsDeleting(false);
     }
@@ -161,7 +162,7 @@ export default function ScreensPage() {
       fetchScreens();
     } catch (err) {
       console.error(err);
-      alert("Erreur lors de la réinitialisation");
+      toast.error("Erreur lors de la réinitialisation");
     }
   };
 
@@ -253,11 +254,11 @@ export default function ScreensPage() {
       });
       if (!res.ok)
         throw new Error("Erreur lors de la mise à jour de la playlist");
-      alert("Playlist mise à jour !");
+      toast.success("Playlist mise à jour !");
       setIsDetailsModalOpen(false);
       fetchScreens();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || "Erreur lors de la mise à jour de la playlist");
     } finally {
       setIsAssigningContent(false);
     }
@@ -266,7 +267,7 @@ export default function ScreensPage() {
   const applyContentAction = async (mode: "replace" | "add" | "remove") => {
     if (!screenForContent) return;
     if (selectedContentIds.length === 0) {
-      alert("Veuillez sélectionner au moins un contenu.");
+      toast.error("Veuillez sélectionner au moins un contenu.");
       return;
     }
 
@@ -289,9 +290,9 @@ export default function ScreensPage() {
       if (!res.ok)
         throw new Error("Erreur lors de la mise à jour des contenus");
       await fetchScreenResolvedContent(screenId);
-      alert("Contenus mis à jour avec succès.");
+      toast.success("Contenus mis à jour avec succès.");
     } catch (err: any) {
-      alert(err?.message || "Impossible de mettre à jour les contenus.");
+      toast.error(err?.message || "Impossible de mettre à jour les contenus.");
     } finally {
       setIsAssigningContent(false);
     }

@@ -114,6 +114,23 @@ export const fr = {
       inactive: "désactivé",
     }
   },
+  ai: {
+    trigger: "Générer IA",
+    title: "Générer avec l'IA",
+    subtitle: "Créez une image à partir d'une description textuelle",
+    description_label: "Description",
+    placeholder: "Ex: un coucher de soleil sur la mer avec des palmiers...",
+    name_label: "Nom du contenu",
+    name_placeholder: "Ex: Promo, Menu du jour... (optionnel)",
+    generate: "Générer",
+    generating: "Génération image en cours...",
+    regenerate: "Regénérer",
+    use: "Utiliser ce contenu",
+    generated: "Généré",
+    success: "Image générée avec succès",
+    error: "Erreur lors de la génération",
+    ready: "Contenu IA prêt — complétez puis enregistrez",
+  },
   history: {
     title: "Historique du Système",
     subtitle: "Suivez toutes les actions effectuées sur la plateforme.",

@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { FileVideo, Search, Loader2, AlertCircle, PlayCircle, Clock, Video, Image as ImageIcon, Plus, X, UploadCloud, FileText, Edit2, Trash2, Globe, MessageSquare, RefreshCcw, Music, Sparkles, Monitor, Tv } from "lucide-react";
+import { FileVideo, Search, Loader2, AlertCircle, PlayCircle, Video, Image as ImageIcon, Plus, X, UploadCloud, FileText, Edit2, Trash2, Globe, MessageSquare, RefreshCcw, Music, Sparkles, Monitor, Tv } from "lucide-react";
 import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
+import AIGeneratorPanel from "@/app/components/AIGeneratorPanel";
 
 export default function ContentPage() {
   const { t } = useLanguage();
@@ -20,7 +21,6 @@ export default function ContentPage() {
   const frameInterval = useRef<any>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [screens, setScreens] = useState<any[]>([]);
@@ -32,6 +32,7 @@ export default function ContentPage() {
   const [contentToDelete, setContentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedVisualFile, setSelectedVisualFile] = useState<File | null>(null);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const visualInputRef = useRef<HTMLInputElement>(null);
@@ -137,6 +138,27 @@ export default function ContentPage() {
     }
   };
 
+  const handleAIUse = async (url: string, type: "image" | "video", title?: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const ext = type === "image" ? "jpg" : "mp4";
+      const mimeType = type === "image" ? "image/jpeg" : "video/mp4";
+      const file = new File([blob], `ia-generated.${ext}`, { type: mimeType });
+      setSelectedFile(file);
+      setFormData((prev: any) => ({
+        ...prev,
+        type,
+        title: title?.trim() || `IA — ${new Date().toLocaleDateString("fr-FR")}`,
+      }));
+      setIsAIModalOpen(false);
+      setIsModalOpen(true);
+      toast.success(t.ai.ready);
+    } catch {
+      toast.error("Erreur lors de l'utilisation du contenu IA");
+    }
+  };
+
   const handleDeleteClick = (id: string) => {
     setContentToDelete(id);
     setIsDeleteModalOpen(true);
@@ -151,6 +173,7 @@ export default function ContentPage() {
       fetchContents();
       setIsDeleteModalOpen(false);
       setContentToDelete(null);
+      toast.success("Contenu supprimé");
     } catch (err: any) {
       toast.error(err.message || "Impossible de supprimer ce contenu");
     } finally {
@@ -226,16 +249,13 @@ export default function ContentPage() {
         throw new Error(errorData.message || "Erreur lors de la création");
       }
       
-      setSubmitSuccess(true);
+      toast.success(editingId ? "Contenu modifié" : "Contenu créé");
       fetchContents();
-      setTimeout(() => {
-        setIsModalOpen(false);
-        setSubmitSuccess(false);
-        setFormData({ title: '', type: 'image', url: '', message: '' });
-        setSelectedFile(null);
-        setSelectedVisualFile(null);
-        setEditingId(null);
-      }, 1500);
+      setIsModalOpen(false);
+      setFormData({ title: '', type: 'image', url: '', message: '' });
+      setSelectedFile(null);
+      setSelectedVisualFile(null);
+      setEditingId(null);
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Erreur lors de la création");
@@ -246,15 +266,17 @@ export default function ContentPage() {
 
   const startMirroring = async (contentId: string) => {
     try {
+      // Contraintes minimales : les contraintes "ideal" strictes (taille/fps) et
+      // le "cursor" mal placé provoquent souvent "Timeout starting video source".
+      // On laisse le navigateur choisir la source, puis on borne le frameRate après coup.
       const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { 
-          cursor: "always",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          frameRate: { ideal: 15 }
-        } as any,
-        audio: false
+        video: true,
+        audio: false,
       });
+      // Limite douce du débit d'images (best-effort, ignoré si non supporté)
+      try {
+        await stream.getVideoTracks()[0]?.applyConstraints({ frameRate: { max: 15 } });
+      } catch { /* non bloquant */ }
       localStream.current = stream;
       setActiveMirrorId(contentId);
 
@@ -401,30 +423,6 @@ export default function ContentPage() {
     toast.success("Mirroring stopped");
   };
 
-  const getStatusBadge = (status?: string) => {
-    const currentStatus = status || "desactive"; 
-    switch (currentStatus) {
-      case "active":
-        return (
-          <span className="flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <PlayCircle size={12} /> {t.content.table.active}
-          </span>
-        );
-      case "desactive":
-        return (
-          <span className="flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
-            <X size={12} /> {t.content.table.inactive}
-          </span>
-        );
-      default:
-        return (
-          <span className="flex w-fit items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20">
-            <Clock size={12} /> {currentStatus}
-          </span>
-        );
-    }
-  };
-
   const getMediaIcon = (type?: string) => {
     const typeLower = type?.toLowerCase();
     if (typeLower?.includes("video")) return <Video size={20} className="text-purple-400" />;
@@ -505,6 +503,12 @@ export default function ContentPage() {
             </div>
           </button>
           <button
+            onClick={() => setIsAIModalOpen(true)}
+            className="shrink-0 bg-primary text-primary-foreground hover:opacity-90 px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+          >
+            <Sparkles size={16} /> {t.ai.trigger}
+          </button>
+          <button
             onClick={openAddModal}
             className="shrink-0 bg-primary hover:opacity-90 text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center justify-center gap-2 whitespace-nowrap"
           >
@@ -535,7 +539,6 @@ export default function ContentPage() {
               <thead className="bg-muted/50 text-xs uppercase font-medium text-muted-foreground border-b border-border transition-colors">
                 <tr>
                   <th scope="col" className="px-6 py-4">{t.content.table.media}</th>
-                  <th scope="col" className="px-6 py-4">{t.content.table.status}</th>
                   <th scope="col" className="px-6 py-4">{t.content.table.assigned_tvs}</th>
                   <th scope="col" className="px-6 py-4">{t.content.table.created_at}</th>
                   <th scope="col" className="px-6 py-4 text-right">Actions</th>
@@ -560,7 +563,6 @@ export default function ContentPage() {
                          <span className="text-xs text-slate-500 font-normal uppercase tracking-wider">{item.type || "---"}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">{getStatusBadge(item.status)}</td>
                     <td className="px-6 py-4">
                       {assignedScreens.length === 0 ? (
                         <span className="text-xs text-muted-foreground">{t.content.table.no_tv}</span>
@@ -619,12 +621,7 @@ export default function ContentPage() {
               <button onClick={() => setIsModalOpen(false)} className="text-muted-foreground hover:text-foreground"><X size={24} /></button>
             </div>
 
-            {submitSuccess ? (
-              <div className="p-12 text-center">
-                <div className="h-16 w-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mb-4 mx-auto border border-emerald-500/20"><UploadCloud size={32} /></div>
-                <h3 className="text-lg font-bold text-foreground">{t.dashboard.save}</h3>
-              </div>
-            ) : (
+            {(
               <form onSubmit={handleSubmit}>
                 <div className="max-h-[450px] overflow-y-auto custom-content-scrollbar">
                   <style dangerouslySetInnerHTML={{ __html: `
@@ -733,6 +730,58 @@ export default function ContentPage() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {isAIModalOpen && (
+        <AIGeneratorPanel
+          onUse={handleAIUse}
+          onClose={() => setIsAIModalOpen(false)}
+        />
+      )}
+
+      {assigningContentId && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => !isAssigning && setAssigningContentId(null)} />
+          <div className="relative w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-border bg-muted/30 flex justify-between items-center">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Tv size={20} className="text-emerald-500" /> {t.content.table.assigned_tvs}
+              </h2>
+              <button onClick={() => setAssigningContentId(null)} className="text-muted-foreground hover:text-foreground"><X size={24} /></button>
+            </div>
+
+            <div className="p-6 space-y-2 max-h-[55vh] overflow-y-auto custom-scrollbar">
+              {screens.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">{t.common.no_data}</p>
+              ) : (
+                screens.map((screen: any) => {
+                  const sid = screen._id || screen.id;
+                  const checked = selectedScreenIds.includes(sid);
+                  return (
+                    <div
+                      key={sid}
+                      onClick={() => setSelectedScreenIds((prev) => prev.includes(sid) ? prev.filter((x) => x !== sid) : [...prev, sid])}
+                      className={`p-3 rounded-xl cursor-pointer border flex items-center gap-3 transition-all ${checked ? "bg-primary/10 border-primary/50" : "bg-background border-border hover:border-primary/30"}`}
+                    >
+                      <Tv size={18} className={checked ? "text-primary" : "text-muted-foreground"} />
+                      <span className="text-sm font-medium flex-1 text-foreground">{screen.name || "TV"}</span>
+                      <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all ${checked ? "bg-primary border-primary" : "border-border"}`}>
+                        {checked && <div className="h-2 w-2 rounded-full bg-primary-foreground" />}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="p-6 border-t border-border flex gap-3">
+              <button onClick={() => setAssigningContentId(null)} className="flex-1 py-3 border border-border rounded-xl font-bold hover:bg-muted transition-all text-foreground">{t.dashboard.cancel}</button>
+              <button onClick={handleSaveAssignedTvs} disabled={isAssigning} className="flex-1 py-3 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:opacity-90 disabled:opacity-50 transition-all">
+                {isAssigning ? t.common.loading : t.dashboard.save}
+              </button>
+            </div>
           </div>
         </div>
       )}

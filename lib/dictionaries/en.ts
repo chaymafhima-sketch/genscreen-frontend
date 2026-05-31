@@ -116,6 +116,23 @@ export const en: Dictionary = {
       inactive: "inactive",
     }
   },
+  ai: {
+    trigger: "Generate AI",
+    title: "Generate with AI",
+    subtitle: "Create an image from a text description",
+    description_label: "Description",
+    placeholder: "E.g. a sunset over the sea with palm trees...",
+    name_label: "Content name",
+    name_placeholder: "E.g. Promo, Daily menu... (optional)",
+    generate: "Generate",
+    generating: "Generating image...",
+    regenerate: "Regenerate",
+    use: "Use this content",
+    generated: "Generated",
+    success: "Image generated successfully",
+    error: "Error during generation",
+    ready: "AI content ready — complete and save",
+  },
   history: {
     title: "System History",
     subtitle: "Track all actions performed on the platform.",

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, ArrowRight, MonitorPlay, AlertCircle, CheckCircle2, Sun, Moon } from "lucide-react";
+import { Mail, Lock, ArrowRight, MonitorPlay, AlertCircle, CheckCircle2, Sun, Moon, Eye, EyeOff } from "lucide-react";
 import LanguageToggle from "@/app/components/LanguageToggle";
 import { signIn, useSession } from "next-auth/react";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
@@ -17,6 +17,7 @@ export default function LoginPage() {
   useEffect(() => setMounted(true), []);
 
   const [form, setForm] = useState({ email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -172,13 +173,21 @@ export default function LoginPage() {
                     <Lock size={16} />
                   </div>
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
-                    className="w-full dark:bg-white/5 bg-slate-50 dark:border-white/10 border-slate-200 border rounded-xl py-3 pl-10 pr-4 text-sm dark:text-white text-slate-900 dark:placeholder-slate-600 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                    className="w-full dark:bg-white/5 bg-slate-50 dark:border-white/10 border-slate-200 border rounded-xl py-3 pl-10 pr-11 text-sm dark:text-white text-slate-900 dark:placeholder-slate-600 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                     required
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3.5 dark:text-slate-500 text-slate-400 hover:text-blue-500 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
 

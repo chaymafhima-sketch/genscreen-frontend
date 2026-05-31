@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import {
   Building2,
   MapPin,
@@ -78,7 +79,7 @@ export default function ManagerEtablissementsPage() {
 
       fetchMyEtablissements();
     } catch (err: any) {
-      alert(err.message || "Impossible de supprimer ce établissement");
+      toast.error(err.message || "Impossible de supprimer ce établissement");
     }
   };
 

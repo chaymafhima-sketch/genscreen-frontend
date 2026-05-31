@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
+import AIGeneratorPanel from "@/app/components/AIGeneratorPanel";
 
 export default function ManagerContentPage() {
   const { t } = useLanguage();
@@ -49,6 +50,7 @@ export default function ManagerContentPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [contentToDelete, setContentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [createVisualFile, setCreateVisualFile] = useState<File | null>(null);
   const [editVisualFile, setEditVisualFile] = useState<File | null>(null);
   const editVisualRef = useRef<HTMLInputElement>(null);
@@ -120,6 +122,7 @@ export default function ManagerContentPage() {
       setIsEditModalOpen(false);
       setEditVisualFile(null);
       fetchContents();
+      toast.success("Contenu modifié");
     } catch (err) {
       toast.error("Impossible de mettre à jour");
     } finally {
@@ -193,6 +196,7 @@ export default function ManagerContentPage() {
       setCreateFormData({ title: "", type: "message", url: "", message: "" });
       setCreateFile(null);
       fetchContents();
+      toast.success("Contenu créé");
     } catch (err: any) {
       toast.error(err?.message || "Erreur");
     } finally {
@@ -209,6 +213,7 @@ export default function ManagerContentPage() {
       fetchContents();
       setIsDeleteModalOpen(false);
       setContentToDelete(null);
+      toast.success("Contenu supprimé");
     } catch (err: any) {
       toast.error(err?.message || "Erreur");
     } finally {
@@ -228,19 +233,9 @@ export default function ManagerContentPage() {
   return (
     <div className="max-w-5xl mx-auto animate-in fade-in duration-700">
       <div className="space-y-8">
-        <div className="flex justify-between items-end">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground tracking-tight">{t.content.title}</h1>
-            <p className="text-muted-foreground mt-2">{t.content.subtitle}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setIsCreateModalOpen(true)} className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all flex items-center gap-2">
-              <Plus size={16} /> {t.content.add_button}
-            </button>
-            <button type="button" onClick={() => { fetchData(); fetchContents(); }} className="p-2.5 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all active:rotate-180 duration-500" title={t.common.refresh}>
-              <RefreshCcw size={20} />
-            </button>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold text-foreground tracking-tight">{t.content.title}</h1>
+          <p className="text-muted-foreground mt-2">{t.content.subtitle}</p>
         </div>
 
         <form onSubmit={handleDiffusion} className="soft-card p-8 shadow-sm relative overflow-hidden flex flex-col h-[600px]">
@@ -250,11 +245,21 @@ export default function ManagerContentPage() {
             </div>
           )}
 
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <h3 className="text-lg font-bold text-foreground">{t.content.title}</h3>
-            <div className="relative group flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={16} />
-              <input type="text" placeholder={t.content.search_placeholder} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-background/50 border border-border rounded-xl pl-10 pr-10 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
+            <div className="flex items-center gap-2 flex-1">
+              <div className="relative group flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={16} />
+                <input type="text" placeholder={t.content.search_placeholder} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-background/50 border border-border rounded-xl pl-10 pr-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all" />
+              </div>
+              <button type="button" onClick={() => setIsAIModalOpen(true)} className="shrink-0 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all flex items-center gap-2 whitespace-nowrap">
+                <Sparkles size={16} /> {t.ai.trigger}
+              </button>
+              <button type="button" onClick={() => setIsCreateModalOpen(true)} className="shrink-0 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-all flex items-center gap-2 whitespace-nowrap">
+                <Plus size={16} /> {t.content.add_button}
+              </button>
+              <button type="button" onClick={() => { fetchData(); fetchContents(); }} className="shrink-0 p-2 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-all active:rotate-180 duration-500" title={t.common.refresh}>
+                <RefreshCcw size={18} />
+              </button>
             </div>
           </div>
 
@@ -446,6 +451,32 @@ export default function ManagerContentPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {isAIModalOpen && (
+        <AIGeneratorPanel
+          onUse={async (url, type, title) => {
+            try {
+              const response = await fetch(url);
+              const blob = await response.blob();
+              const ext = type === "image" ? "jpg" : "mp4";
+              const mimeType = type === "image" ? "image/jpeg" : "video/mp4";
+              const file = new File([blob], `ia-generated.${ext}`, { type: mimeType });
+              setCreateFile(file);
+              setCreateFormData((prev: any) => ({
+                ...prev,
+                type,
+                title: title?.trim() || `IA — ${new Date().toLocaleDateString("fr-FR")}`,
+              }));
+              setIsAIModalOpen(false);
+              setIsCreateModalOpen(true);
+              toast.success(t.ai.ready);
+            } catch {
+              toast.error("Erreur lors de l'utilisation du contenu IA");
+            }
+          }}
+          onClose={() => setIsAIModalOpen(false)}
+        />
       )}
 
       {isDeleteModalOpen && (
