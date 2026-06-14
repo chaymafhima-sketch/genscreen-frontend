@@ -1,5 +1,7 @@
 "use client";
 
+import { MEDIA_BASE } from "@/lib/mediaUrl";
+
 import { useEffect, useState, useRef } from "react";
 import {
   Send,
@@ -273,7 +275,7 @@ export default function ManagerContentPage() {
                 <div key={item._id || item.id} onClick={() => setSelectedContentId(prev => prev === (item._id || item.id) ? null : (item._id || item.id))} className={`p-4 rounded-2xl cursor-pointer transition-all border flex items-center justify-between group ${selectedContentId === (item._id || item.id) ? "bg-primary/10 border-primary/50 shadow-md" : "bg-background border-border hover:border-primary/30"}`}>
                   <div className="flex items-center gap-4">
                     <div className="h-12 w-16 bg-muted/50 border border-border flex items-center justify-center rounded-lg overflow-hidden relative">
-                      {item.imageBase64 ? <img src={`http://localhost:3001${item.imageBase64}`} alt="thumbnail" className="object-cover w-full h-full" /> : getMediaIcon(item.type)}
+                      {item.imageBase64 ? <img src={`${MEDIA_BASE}${item.imageBase64}`} alt="thumbnail" className="object-cover w-full h-full" /> : getMediaIcon(item.type)}
                       {(item.videoUrl && item.type !== "audio") && <PlayCircle size={16} className="absolute text-white" />}
                     </div>
                     <div>

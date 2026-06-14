@@ -1,5 +1,7 @@
 "use client";
 
+import { MEDIA_BASE } from "@/lib/mediaUrl";
+
 import { useEffect, useState, useRef } from "react";
 import { 
   MonitorSmartphone, 
@@ -356,7 +358,7 @@ export default function ScreensPage() {
               {/* Card Header (Preview) */}
               <div className="relative h-44 bg-muted/40 overflow-hidden">
                 {screen.thumbnail ? (
-                  <img src={`http://localhost:3001${screen.thumbnail}`} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-700" alt="Screen preview" />
+                  <img src={`${MEDIA_BASE}${screen.thumbnail}`} className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-700" alt="Screen preview" />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground/30 group-hover:scale-110 transition-transform duration-700">
                      <Layers size={60} />
@@ -691,7 +693,7 @@ export default function ScreensPage() {
                         <GripVertical size={20} className="text-muted-foreground/50 hover:text-foreground cursor-grab active:cursor-grabbing" />
                         <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden border border-border">
                           {item.imageBase64 ? (
-                            <img src={`http://localhost:3001${item.imageBase64}`} className="w-full h-full object-cover" alt="" />
+                            <img src={`${MEDIA_BASE}${item.imageBase64}`} className="w-full h-full object-cover" alt="" />
                           ) : item.type === 'video' ? (
                             <Activity size={20} className="text-primary" />
                           ) : (
@@ -774,7 +776,7 @@ export default function ScreensPage() {
                       className="group relative aspect-square rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all"
                     >
                       {content.imageBase64 ? (
-                        <img src={`http://localhost:3001${content.imageBase64}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                        <img src={`${MEDIA_BASE}${content.imageBase64}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
                       ) : (
                         <div className="w-full h-full bg-muted flex flex-col items-center justify-center p-2 text-center">
                           <Activity size={24} className="text-primary mb-1" />

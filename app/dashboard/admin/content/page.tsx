@@ -1,5 +1,7 @@
 "use client";
 
+import { MEDIA_BASE } from "@/lib/mediaUrl";
+
 import { useEffect, useState, useRef } from "react";
 import { FileVideo, Search, Loader2, AlertCircle, PlayCircle, Video, Image as ImageIcon, Plus, X, UploadCloud, FileText, Edit2, Trash2, Globe, MessageSquare, RefreshCcw, Music, Sparkles, Monitor, Tv } from "lucide-react";
 import { io } from "socket.io-client";
@@ -553,7 +555,7 @@ export default function ContentPage() {
                     <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-200 flex items-center gap-4">
                        <div className="h-12 w-16 bg-slate-100 dark:bg-slate-950/80 border border-slate-200 flex items-center justify-center rounded-lg shadow-inner overflow-hidden relative">
                          {item.imageBase64 ? (
-                           <img src={`http://localhost:3001${item.imageBase64}`} alt="thumbnail" className="object-cover w-full h-full opacity-60" />
+                           <img src={`${MEDIA_BASE}${item.imageBase64}`} alt="thumbnail" className="object-cover w-full h-full opacity-60" />
                          ) : (
                            getMediaIcon(item.type)
                          )}

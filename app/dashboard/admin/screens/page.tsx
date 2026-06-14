@@ -1,5 +1,7 @@
 "use client";
 
+import { MEDIA_BASE } from "@/lib/mediaUrl";
+
 import { useEffect, useState, useRef } from "react";
 import {
   MonitorSmartphone,
@@ -442,7 +444,7 @@ export default function ScreensPage() {
               <div className="relative h-44 bg-muted/40 overflow-hidden">
                 {screen.thumbnail ? (
                   <img
-                    src={`http://localhost:3001${screen.thumbnail}`}
+                    src={`${MEDIA_BASE}${screen.thumbnail}`}
                     className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity duration-700"
                     alt="Screen preview"
                   />
@@ -922,7 +924,7 @@ export default function ScreensPage() {
                         <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden border border-border">
                           {item.imageBase64 ? (
                             <img
-                              src={`http://localhost:3001${item.imageBase64}`}
+                              src={`${MEDIA_BASE}${item.imageBase64}`}
                               className="w-full h-full object-cover"
                               alt=""
                             />
@@ -1028,7 +1030,7 @@ export default function ScreensPage() {
                       >
                         {content.imageBase64 ? (
                           <img
-                            src={`http://localhost:3001${content.imageBase64}`}
+                            src={`${MEDIA_BASE}${content.imageBase64}`}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                             alt=""
                           />
