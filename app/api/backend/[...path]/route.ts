@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { AUTH_SECRET } from "@/lib/auth";
 
-const BACKEND = "http://localhost:3001";
+// Utilise l'URL du backend déployé (BACKEND_URL) ; repli sur localhost en dev.
+const BACKEND = process.env.BACKEND_URL || "http://localhost:3001";
 
 type RefreshResponse = {
   access_token?: string;
