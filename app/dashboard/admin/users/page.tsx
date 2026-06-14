@@ -145,7 +145,7 @@ export default function UsersPage() {
       });
       if (!res.ok) throw new Error("Erreur lors de la mise à jour");
       fetchData();
-      toast.success(user.isActive ? t.auth.error_deactivated : "Compte activé");
+      toast.success(user.isActive ? t.auth.error_deactivated : t.users.account_activated);
     } catch (err: any) {
       toast.error(err.message);
     }

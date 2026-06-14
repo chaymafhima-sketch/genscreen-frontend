@@ -4,9 +4,11 @@ import Sidebar, { SidebarLinkType } from "../manager/components/Sidebar"
 import Header from "../manager/components/Header"
 import { LayoutDashboard, Building2, MonitorSmartphone, FileVideo, Activity, UserCheck, User } from "lucide-react";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
+import { useState } from "react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const adminLinks: SidebarLinkType[] = [
     { href: "/dashboard/admin", label: t.dashboard.overview, icon: <LayoutDashboard size={20} /> },
@@ -19,10 +21,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 transition-colors duration-300">
-      <Sidebar links={adminLinks} role={t.dashboard.admin} />
-      <div className="flex-1 ml-72 relative flex flex-col min-h-screen">
-        <Header />
-        <main className="p-8 flex-1 overflow-x-hidden">
+      <Sidebar links={adminLinks} role={t.dashboard.admin} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="flex-1 md:ml-72 relative flex flex-col min-h-screen">
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <main className="p-4 sm:p-6 md:p-8 flex-1 overflow-x-hidden">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

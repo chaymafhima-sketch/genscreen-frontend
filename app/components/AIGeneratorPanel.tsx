@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Image as ImageIcon, Loader2, CheckCircle2, RefreshCcw, X } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Loader2, CheckCircle2, RefreshCcw, X, ZoomIn } from "lucide-react";
 import toast from "react-hot-toast";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
@@ -17,6 +17,7 @@ export default function AIGeneratorPanel({ onUse, onClose }: AIGeneratorPanelPro
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [isZoomed, setIsZoomed] = useState(false);
 
   const generate = async () => {
     if (!prompt.trim()) return;
@@ -122,12 +123,21 @@ export default function AIGeneratorPanel({ onUse, onClose }: AIGeneratorPanelPro
           {/* Preview */}
           {result && (
             <div className="space-y-3">
-              <div className="rounded-xl overflow-hidden border border-border bg-black/20 aspect-video relative">
+              <button
+                type="button"
+                onClick={() => setIsZoomed(true)}
+                className="group relative block w-full rounded-xl overflow-hidden border border-border bg-black/20 aspect-video cursor-zoom-in"
+              >
                 <img src={result} alt="Generated" className="w-full h-full object-cover" />
                 <div className="absolute top-2 right-2 bg-emerald-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1">
                   <CheckCircle2 size={10} /> {t.ai.generated}
                 </div>
-              </div>
+                <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 opacity-0 group-hover:opacity-100 transition-all">
+                  <span className="flex items-center gap-1.5 text-white text-xs font-bold bg-black/50 px-3 py-1.5 rounded-full">
+                    <ZoomIn size={14} /> Voir en grand
+                  </span>
+                </div>
+              </button>
 
               <div className="flex gap-2">
                   <button
@@ -147,6 +157,27 @@ export default function AIGeneratorPanel({ onUse, onClose }: AIGeneratorPanelPro
           )}
         </div>
       </div>
+
+      {/* Aperçu plein écran */}
+      {isZoomed && result && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md cursor-zoom-out"
+          onClick={() => setIsZoomed(false)}
+        >
+          <button
+            type="button"
+            onClick={() => setIsZoomed(false)}
+            className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+          >
+            <X size={26} />
+          </button>
+          <img
+            src={result}
+            alt="Aperçu plein écran"
+            className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+          />
+        </div>
+      )}
     </div>
   );
 }

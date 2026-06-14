@@ -25,7 +25,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (status === "authenticated") {
       const role = (session?.user as { role?: string } | undefined)?.role;
-      const target = role === "admin" ? "/dashboard/admin" : "/dashboard/manager";
+      const target = role === "admin" ? "/dashboard/admin" : "/dashboard/manager/screens";
       router.replace(target);
     }
   }, [status, session, router]);
@@ -48,16 +48,18 @@ export default function LoginPage() {
         const sessionRes = await fetch("/api/auth/session", { cache: "no-store" });
         const sessionData = sessionRes.ok ? await sessionRes.json() : null;
         const role = sessionData?.user?.role;
-        const target = role === "admin" ? "/dashboard/admin" : "/dashboard/manager";
+        const target = role === "admin" ? "/dashboard/admin" : "/dashboard/manager/screens";
         setTimeout(() => {
           router.replace(target);
           window.location.href = target;
         }, 900);
       } else {
-        const errorMessage = result?.error === "CredentialsSignin"
-          ? t.auth.error_invalid_credentials
-          : (result?.error || t.common.error);
-        setError(errorMessage);
+        // Toujours afficher un message traduit (jamais le message brut du backend),
+        // dans la langue actuellement sélectionnée.
+        const raw = (result?.error || "").toLowerCase();
+        const isDeactivated =
+          raw.includes("désactiv") || raw.includes("deactivat") || raw.includes("disabled");
+        setError(isDeactivated ? t.auth.error_deactivated : t.auth.error_invalid_credentials);
       }
     } catch (err) {
       console.error("Erreur:", err);
@@ -108,7 +110,7 @@ export default function LoginPage() {
             <div className="h-12 w-12 dark:bg-blue-600/20 bg-blue-600/10 dark:border-blue-500/30 border-blue-500/40 border rounded-xl flex items-center justify-center">
               <MonitorPlay size={24} className="dark:text-blue-400 text-blue-600" />
             </div>
-            <span className="dark:text-white text-slate-900 font-black tracking-[0.2em] uppercase text-2xl">TUS</span>
+            <span className="dark:text-white text-slate-900 font-black tracking-tight text-2xl">GenScreen</span>
           </div>
           <h1 className="text-5xl lg:text-6xl font-extrabold dark:text-white text-slate-900 leading-[1.1] mb-5">
             {t.auth.brand_title}<br />

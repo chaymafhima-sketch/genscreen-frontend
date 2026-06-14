@@ -8,7 +8,7 @@ export const fr = {
     verifying: "Vérification...",
     platform_reserved: "Plateforme réservée au personnel autorisé.",
     error_invalid_credentials: "Courriel ou mot de passe incorrect.",
-    error_deactivated: "Votre compte a été désactivé. Veuillez contacter l'administrateur.",
+    error_deactivated: "Le compte a été désactivé.",
     success_login: "Connexion réussie ! Redirection...",
     brand_title: "L'affichage dynamique,",
     brand_highlight: "réinventé.",
@@ -79,7 +79,7 @@ export const fr = {
     add_button: "Ajouter un écran",
     search_placeholder: "Rechercher par nom ou établissement...",
     stats: {
-      operational: "OPÉRATIONNELS",
+      operational: "EN LIGNE",
       offline: "HORS LIGNE",
       average_flow: "FLUX MOYEN",
     },
@@ -134,12 +134,21 @@ export const fr = {
   history: {
     title: "Historique du Système",
     subtitle: "Suivez toutes les actions effectuées sur la plateforme.",
+    search_placeholder: "Rechercher dans l'historique...",
+    system: "Système",
+    system_online: "SYSTÈME EN LIGNE",
     table: {
-      status: "STATUS",
+      status: "STATUT",
       event: "ÉVÉNEMENT",
       source: "SOURCE",
       user: "UTILISATEUR",
       timestamp: "HORODATAGE",
+    },
+    status: {
+      error: "ERREUR",
+      warning: "AVERTISSEMENT",
+      info: "INFO",
+      success: "SUCCÈS",
     },
     events: {
       content_broadcast: "Diffusion De Contenu",
@@ -183,6 +192,7 @@ export const fr = {
       deleting: "Suppression...",
     },
     edit_success: "Modifié avec succès",
+    account_activated: "Le compte a été activé.",
   },
   common: {
     loading: "Chargement...",

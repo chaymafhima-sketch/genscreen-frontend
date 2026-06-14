@@ -140,7 +140,7 @@ export default function ForgotPasswordPage() {
             <div className="h-12 w-12 dark:bg-blue-600/20 bg-blue-600/10 dark:border-blue-500/30 border-blue-500/40 border rounded-xl flex items-center justify-center">
               <MonitorPlay size={24} className="dark:text-blue-400 text-blue-600" />
             </div>
-            <span className="dark:text-white text-slate-900 font-black tracking-[0.2em] uppercase text-2xl">TUS</span>
+            <span className="dark:text-white text-slate-900 font-black tracking-tight text-2xl">GenScreen</span>
           </div>
           <h1 className="text-5xl lg:text-6xl font-extrabold dark:text-white text-slate-900 leading-[1.1] mb-5">
             {t.auth.brand_title}<br />

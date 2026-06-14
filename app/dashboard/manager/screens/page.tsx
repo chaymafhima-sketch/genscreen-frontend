@@ -48,6 +48,10 @@ export default function ScreensPage() {
   const [isContentModalOpen, setIsContentModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [screenToDelete, setScreenToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fetchScreens = async () => {
     try {
       const res = await fetch("/api/backend/screens", { cache: "no-store" });
@@ -110,14 +114,24 @@ export default function ScreensPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cet écran ?")) return;
+  const handleDelete = (id: string) => {
+    setScreenToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!screenToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/backend/screens/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/backend/screens/${screenToDelete}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
+      setIsDeleteModalOpen(false);
+      setScreenToDelete(null);
       fetchScreens();
     } catch (err: any) {
       toast.error(err.message || "Impossible de supprimer cet écran");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -790,6 +804,43 @@ export default function ScreensPage() {
               >
                 {isAssigningContent ? <Loader2 size={16} className="animate-spin" /> : null}
                 Enregistrer Playlist
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            onClick={() => !isDeleting && setIsDeleteModalOpen(false)}
+          />
+          <div className="relative w-full max-w-sm bg-card border border-destructive/20 rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 flex flex-col items-center text-center">
+            <div className="h-16 w-16 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mb-4 border border-destructive/20">
+              <Trash2 size={32} />
+            </div>
+            <h2 className="text-2xl font-extrabold text-foreground mb-2">
+              {t.dashboard.delete} ?
+            </h2>
+            <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
+              Êtes-vous sûr de vouloir supprimer cet écran ?
+            </p>
+            <div className="flex gap-4 w-full">
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={isDeleting}
+                className="flex-1 py-3.5 bg-muted/40 text-foreground hover:bg-muted border border-border rounded-2xl font-bold transition-all"
+              >
+                {t.dashboard.cancel}
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="flex-1 py-3.5 bg-destructive text-white hover:opacity-90 rounded-2xl font-bold transition-all flex justify-center items-center gap-2"
+              >
+                {isDeleting && <Loader2 size={18} className="animate-spin" />}
+                {isDeleting ? t.common.loading : t.dashboard.delete}
               </button>
             </div>
           </div>

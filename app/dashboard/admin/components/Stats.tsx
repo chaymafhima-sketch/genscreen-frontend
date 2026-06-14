@@ -119,7 +119,16 @@ export default function Stats() {
       borderBase: "border-red-500/20",
       glow: "shadow-red-500/10",
     },
-  ].filter(stat => isAdmin || stat.title !== t.dashboard.stats.managers);
+  ]
+    // Pour un responsable, on masque les cartes propres à l'admin :
+    // - "Responsables" (gestion des comptes managers)
+    // - "Établissements partenaires" (un responsable n'a que son propre établissement)
+    .filter(
+      (stat) =>
+        isAdmin ||
+        (stat.title !== t.dashboard.stats.managers &&
+          stat.title !== t.dashboard.stats.partners),
+    );
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

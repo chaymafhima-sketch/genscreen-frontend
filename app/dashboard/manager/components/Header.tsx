@@ -10,6 +10,7 @@ import {
   Moon,
   Search,
   Command,
+  Menu,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -17,7 +18,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 import LanguageToggle from "@/app/components/LanguageToggle";
 
-export default function Header() {
+export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -60,7 +61,16 @@ export default function Header() {
 
   return (
     <header className="h-20 bg-background/80 backdrop-blur-xl border-b border-border sticky top-0 z-50 px-8 flex items-center justify-between transition-colors duration-300">
-      <div className="hidden md:flex w-1/3 items-center">
+      <div className="flex items-center gap-2 md:w-1/3">
+        {/* Bouton menu (mobile uniquement) */}
+        <button
+          onClick={onMenuClick}
+          className="md:hidden p-2 -ml-1 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted transition-colors focus:outline-none"
+          aria-label="Ouvrir le menu"
+        >
+          <Menu size={22} />
+        </button>
+        <div className="hidden md:flex w-full items-center">
         {isOverviewPage && (
           <form 
             onSubmit={(e) => {
@@ -87,6 +97,7 @@ export default function Header() {
             </div>
           </form>
         )}
+        </div>
       </div>
 
       <div className="flex items-center gap-5">

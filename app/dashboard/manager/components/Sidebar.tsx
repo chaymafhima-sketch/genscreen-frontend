@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { MonitorPlay, ChevronRight, LogOut, User, Mail } from "lucide-react";
-import React from "react";
+import React, { useEffect } from "react";
 import { signOut, useSession } from "next-auth/react";
 
 export interface SidebarLinkType {
@@ -12,9 +12,25 @@ export interface SidebarLinkType {
   icon: React.ReactNode;
 }
 
-export default function Sidebar({ links, role }: { links: SidebarLinkType[], role: string }) {
+export default function Sidebar({
+  links,
+  role,
+  isOpen = false,
+  onClose,
+}: {
+  links: SidebarLinkType[];
+  role: string;
+  isOpen?: boolean;
+  onClose?: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
+
+  // Ferme le menu mobile à chaque changement de page
+  useEffect(() => {
+    onClose?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const { data: session } = useSession();
   const userData = ((session as any)?.user || {}) as {name?: string, fullname?: string, email?: string};
@@ -34,7 +50,21 @@ export default function Sidebar({ links, role }: { links: SidebarLinkType[], rol
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-72 bg-muted/50 border-r border-border flex flex-col z-40 transition-colors duration-300">
+    <>
+      {/* Overlay sombre derrière le drawer (mobile uniquement) */}
+      {isOpen && (
+        <div
+          onClick={onClose}
+          aria-hidden="true"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] md:hidden"
+        />
+      )}
+
+      <aside
+        className={`fixed left-0 top-0 h-screen w-72 bg-muted/50 border-r border-border flex flex-col z-[70] transition-all duration-300 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0`}
+      >
       {/* Branding Area */}
       <div className="p-8 border-b border-border transition-colors duration-300">
         <div className="flex items-center gap-3">
@@ -42,7 +72,7 @@ export default function Sidebar({ links, role }: { links: SidebarLinkType[], rol
             <MonitorPlay size={20} className="text-primary-foreground" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-primary tracking-tight leading-none transition-colors duration-300">TUS</h2>
+            <h2 className="text-xl font-bold text-primary tracking-tight leading-none transition-colors duration-300">GenScreen</h2>
             <div className="mt-1.5 inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase tracking-widest shadow-sm">
               <div className="w-1 h-1 rounded-full bg-primary mr-1.5 animate-pulse" />
               {role}
@@ -83,8 +113,7 @@ export default function Sidebar({ links, role }: { links: SidebarLinkType[], rol
           );
         })}
       </nav>
-
-
-    </aside>
+      </aside>
+    </>
   );
 }

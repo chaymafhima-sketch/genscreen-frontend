@@ -33,6 +33,10 @@ export default function ManagerEtablissementsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [etablissementToDelete, setEtablissementToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const fetchMyEtablissements = async () => {
     try {
       const profileRes = await fetch("/api/backend/users/profile", { cache: "no-store" });
@@ -57,10 +61,16 @@ export default function ManagerEtablissementsPage() {
     fetchMyEtablissements();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce établissement ?")) return;
+  const handleDelete = (id: string) => {
+    setEtablissementToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!etablissementToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/backend/etablissements/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/backend/etablissements/${etablissementToDelete}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur lors de la suppression");
 
       // Log deletion
@@ -77,9 +87,13 @@ export default function ManagerEtablissementsPage() {
         })
       });
 
+      setIsDeleteModalOpen(false);
+      setEtablissementToDelete(null);
       fetchMyEtablissements();
     } catch (err: any) {
       toast.error(err.message || "Impossible de supprimer ce établissement");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -315,6 +329,44 @@ export default function ManagerEtablissementsPage() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            onClick={() => !isDeleting && setIsDeleteModalOpen(false)}
+          />
+          <div className="relative w-full max-w-sm bg-card border border-destructive/20 rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 flex flex-col items-center text-center">
+            <div className="h-16 w-16 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mb-4 border border-destructive/20">
+              <Trash2 size={32} />
+            </div>
+            <h2 className="text-2xl font-extrabold text-foreground mb-2">
+              Supprimer ?
+            </h2>
+            <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
+              Êtes-vous sûr de vouloir supprimer cet établissement ? Cette action
+              est définitive.
+            </p>
+            <div className="flex gap-4 w-full">
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                disabled={isDeleting}
+                className="flex-1 py-3.5 bg-muted/40 text-foreground hover:bg-muted border border-border rounded-2xl font-bold transition-all"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="flex-1 py-3.5 bg-destructive text-white hover:opacity-90 rounded-2xl font-bold transition-all flex justify-center items-center gap-2"
+              >
+                {isDeleting && <Loader2 size={18} className="animate-spin" />}
+                {isDeleting ? "Suppression..." : "Supprimer"}
+              </button>
+            </div>
           </div>
         </div>
       )}

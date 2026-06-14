@@ -10,7 +10,7 @@ export const en: Dictionary = {
     verifying: "Verifying...",
     platform_reserved: "Platform reserved for authorized personnel.",
     error_invalid_credentials: "Invalid email or password.",
-    error_deactivated: "Your account has been deactivated. Please contact the administrator.",
+    error_deactivated: "The account has been deactivated.",
     success_login: "Login successful! Redirecting...",
     brand_title: "Dynamic signage,",
     brand_highlight: "reinvented.",
@@ -81,7 +81,7 @@ export const en: Dictionary = {
     add_button: "Add a screen",
     search_placeholder: "Search by name or establishment...",
     stats: {
-      operational: "OPERATIONAL",
+      operational: "ONLINE",
       offline: "OFFLINE",
       average_flow: "AVERAGE FLOW",
     },
@@ -136,12 +136,21 @@ export const en: Dictionary = {
   history: {
     title: "System History",
     subtitle: "Track all actions performed on the platform.",
+    search_placeholder: "Search history...",
+    system: "System",
+    system_online: "SYSTEM ONLINE",
     table: {
       status: "STATUS",
       event: "EVENT",
       source: "SOURCE",
       user: "USER",
       timestamp: "TIMESTAMP",
+    },
+    status: {
+      error: "ERROR",
+      warning: "WARNING",
+      info: "INFO",
+      success: "SUCCESS",
     },
     events: {
       content_broadcast: "Content Broadcast",
@@ -185,6 +194,7 @@ export const en: Dictionary = {
       deleting: "Deleting...",
     },
     edit_success: "Modified successfully",
+    account_activated: "The account has been activated.",
   },
   common: {
     loading: "Loading...",

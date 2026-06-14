@@ -1,7 +1,7 @@
 "use client";
 
 import Stats from "./components/Stats";
-import ContentManager from "./components/ContentManager";
+import AnalyticsCharts from "./components/AnalyticsCharts";
 import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
 export default function AdminDashboard() {
@@ -20,7 +20,8 @@ export default function AdminDashboard() {
 
       <Stats />
 
-          
+      <AnalyticsCharts />
+
     </div>
   );
 }

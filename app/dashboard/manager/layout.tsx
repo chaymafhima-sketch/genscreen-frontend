@@ -9,6 +9,7 @@ import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 
 export default function ManagerLayout({ children }: { children: React.ReactNode }) {
   const [userData, setUserData] = React.useState<any>({});
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { data: session } = useSession();
   const { t } = useLanguage();
 
@@ -39,10 +40,10 @@ export default function ManagerLayout({ children }: { children: React.ReactNode 
 
   return (
     <div className="flex min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 transition-colors duration-300">
-      <Sidebar links={managerLinks} role={t.dashboard.manager} />
-      <div className="flex-1 ml-72 relative flex flex-col min-h-screen">
-        <Header />
-        <main className="p-8 flex-1 overflow-x-hidden">
+      <Sidebar links={managerLinks} role={t.dashboard.manager} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="flex-1 md:ml-72 relative flex flex-col min-h-screen">
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <main className="p-4 sm:p-6 md:p-8 flex-1 overflow-x-hidden">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

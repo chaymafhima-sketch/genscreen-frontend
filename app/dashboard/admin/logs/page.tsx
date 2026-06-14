@@ -162,7 +162,7 @@ export default function LogsPage() {
           />
           <input
             type="text"
-            placeholder={t.history.subtitle}
+            placeholder={t.history.search_placeholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-background border border-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary transition-all placeholder:text-muted-foreground"
@@ -205,9 +205,9 @@ export default function LogsPage() {
                   (log.source || log.module || "").toLowerCase().includes(searchQuery.toLowerCase())
                 ).map((log) => {
                   const type = log.type || eventToType(log.action || log.event || '');
-                  const actorName = log.user || (log.actorUserId && usersMap[log.actorUserId]) || (log.actorRole ? `${log.actorRole.toUpperCase()}` : "Système");
+                  const actorName = log.user || (log.actorUserId && usersMap[log.actorUserId]) || (log.actorRole ? `${log.actorRole.toUpperCase()}` : t.history.system);
                   const eventName = log.action || log.event || "---";
-                  const moduleName = log.source || log.module || "Système";
+                  const moduleName = log.source || log.module || t.history.system;
                   const dateString = log.timestamp || log.createdAt || new Date().toISOString();
                   
                   return (
@@ -215,7 +215,7 @@ export default function LogsPage() {
                     <td className="p-4 px-6">
                       <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold w-fit ${getStatusColor(type)}`}>
                         {getStatusIcon(type)}
-                        {type.toUpperCase()}
+                        {t.history.status[type]}
                       </div>
                     </td>
                     <td className="p-4 px-6 font-bold">{formatEvent(eventName)}</td>
@@ -244,7 +244,7 @@ export default function LogsPage() {
           </table>
         </div>
         <div className="p-4 bg-muted/50 border-t border-border flex justify-between items-center text-[11px] font-bold text-muted-foreground uppercase">
-          <div className="flex gap-4"><span>SYSTEM ONLINE</span></div>
+          <div className="flex gap-4"><span>{t.history.system_online}</span></div>
           <div className="flex items-center gap-2">
             <button onClick={() => fetchLogs(true, Math.max(1, page - 1))} disabled={page <= 1 || isRefreshing} className="px-2 py-1 border rounded disabled:opacity-50"><ChevronLeft size={12} /></button>
             <span>{pagination.page} / {pagination.totalPages}</span>

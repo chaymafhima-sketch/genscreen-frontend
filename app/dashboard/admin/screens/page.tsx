@@ -59,6 +59,10 @@ export default function ScreensPage() {
   const [screenToDelete, setScreenToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [screenToReset, setScreenToReset] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
+
   const fetchScreens = async () => {
     try {
       const res = await fetch("/api/backend/screens", { cache: "no-store" });
@@ -152,17 +156,28 @@ export default function ScreensPage() {
     }
   };
 
-  const handleResetPairing = async (screenId: string) => {
-    if (!confirm("Voulez-vous réinitialiser le code de ce téléviseur ? Il devra être reconnecté.")) return;
+  const handleResetPairing = (screenId: string) => {
+    setScreenToReset(screenId);
+    setIsResetModalOpen(true);
+  };
+
+  const confirmResetPairing = async () => {
+    if (!screenToReset) return;
+    setIsResetting(true);
     try {
-      const res = await fetch(`/api/backend/screens/${screenId}/reset-pairing`, {
+      const res = await fetch(`/api/backend/screens/${screenToReset}/reset-pairing`, {
         method: "POST",
       });
       if (!res.ok) throw new Error("Erreur");
+      toast.success("Code de jumelage réinitialisé");
+      setIsResetModalOpen(false);
+      setScreenToReset(null);
       fetchScreens();
     } catch (err) {
       console.error(err);
       toast.error("Erreur lors de la réinitialisation");
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -1094,6 +1109,44 @@ export default function ScreensPage() {
               >
                 {isDeleting && <Loader2 size={18} className="animate-spin" />}
                 {isDeleting ? t.common.loading : t.dashboard.delete}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isResetModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            onClick={() => !isResetting && setIsResetModalOpen(false)}
+          />
+          <div className="relative w-full max-w-sm bg-card border border-primary/20 rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 flex flex-col items-center text-center">
+            <div className="h-16 w-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4 border border-primary/20">
+              <RefreshCcw size={30} />
+            </div>
+            <h2 className="text-2xl font-extrabold text-foreground mb-2">
+              Réinitialiser le code ?
+            </h2>
+            <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
+              Le code de jumelage de ce téléviseur sera régénéré. L'écran sera
+              déconnecté et devra être jumelé à nouveau.
+            </p>
+            <div className="flex gap-4 w-full">
+              <button
+                onClick={() => setIsResetModalOpen(false)}
+                disabled={isResetting}
+                className="flex-1 py-3.5 bg-muted/40 text-foreground hover:bg-muted border border-border rounded-2xl font-bold transition-all"
+              >
+                {t.dashboard.cancel}
+              </button>
+              <button
+                onClick={confirmResetPairing}
+                disabled={isResetting}
+                className="flex-1 py-3.5 bg-primary text-primary-foreground hover:opacity-90 rounded-2xl font-bold transition-all flex justify-center items-center gap-2"
+              >
+                {isResetting && <Loader2 size={18} className="animate-spin" />}
+                {isResetting ? t.common.loading : "Réinitialiser"}
               </button>
             </div>
           </div>
