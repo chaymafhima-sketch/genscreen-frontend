@@ -23,7 +23,7 @@ interface Overview {
   topScreens: { name: string; count: number }[];
 }
 
-const PALETTE = ["#6366f1", "#22c55e", "#f59e0b", "#ec4899", "#06b6d4", "#a855f7"];
+const PALETTE = ["#6366f1", "#15803d", "#f59e0b", "#ec4899", "#06b6d4", "#a855f7"];
 
 export default function AnalyticsCharts() {
   const [data, setData] = useState<Overview | null>(null);
@@ -108,7 +108,7 @@ export default function AnalyticsCharts() {
               width={90}
             />
             <Tooltip />
-            <Bar dataKey="count" fill="#22c55e" radius={[0, 6, 6, 0]} />
+            <Bar dataKey="count" fill="#15803d" radius={[0, 6, 6, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
