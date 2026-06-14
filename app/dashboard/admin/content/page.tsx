@@ -282,7 +282,7 @@ export default function ContentPage() {
       localStream.current = stream;
       setActiveMirrorId(contentId);
 
-      const backendUrl = `${window.location.protocol}//${window.location.hostname}:3001`;
+      const backendUrl = MEDIA_BASE;
       const socket = io(backendUrl); 
       socketRef.current = socket;
 
