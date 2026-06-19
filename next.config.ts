@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: "standalone",
 
   // Masque l'indicateur "N" des Dev Tools de Next.js (visible en dev uniquement)
   devIndicators: false,
