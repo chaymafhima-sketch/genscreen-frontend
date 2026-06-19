@@ -213,5 +213,10 @@ export const en: Dictionary = {
     full_name: "Full Name",
     address: "Address",
     email: "Email",
+  },
+  analytics: {
+    by_type: "Content by Type",
+    over_time: "Content Created per Month",
+    top_screens: "Top Screens (content count)",
   }
 };

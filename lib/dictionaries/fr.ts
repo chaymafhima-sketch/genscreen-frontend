@@ -211,6 +211,11 @@ export const fr = {
     full_name: "Nom complet",
     address: "Adresse",
     email: "Courriel",
+  },
+  analytics: {
+    by_type: "Contenus par type",
+    over_time: "Contenus créés par mois",
+    top_screens: "Top écrans (nb de contenus)",
   }
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/lib/dictionaries/LanguageContext";
 import {
   ResponsiveContainer,
   PieChart,
@@ -26,6 +27,7 @@ interface Overview {
 const PALETTE = ["#6366f1", "#15803d", "#f59e0b", "#ec4899", "#06b6d4", "#a855f7"];
 
 export default function AnalyticsCharts() {
+  const { t } = useLanguage();
   const [data, setData] = useState<Overview | null>(null);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export default function AnalyticsCharts() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* 1. Contenus par type */}
-      <ChartCard title="Contenus par type">
+      <ChartCard title={t.analytics.by_type}>
         <ResponsiveContainer width="100%" height={280}>
           <PieChart>
             <Pie
@@ -66,7 +68,7 @@ export default function AnalyticsCharts() {
       </ChartCard>
 
       {/* 2. Contenus créés par mois */}
-      <ChartCard title="Contenus créés par mois">
+      <ChartCard title={t.analytics.over_time}>
         <ResponsiveContainer width="100%" height={280}>
           <AreaChart data={data?.contentsOverTime ?? []}>
             <defs>
@@ -91,7 +93,7 @@ export default function AnalyticsCharts() {
       </ChartCard>
 
       {/* 3. Top écrans */}
-      <ChartCard title="Top écrans (nb de contenus)">
+      <ChartCard title={t.analytics.top_screens}>
         <ResponsiveContainer width="100%" height={280}>
           <BarChart
             data={data?.topScreens ?? []}
